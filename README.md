@@ -43,8 +43,10 @@ localization, saves, decompiler output or private runtime credentials are includ
 Native attachment loads these modules into the owned game process and hooks
 verified native callbacks; it uses process-memory writes, but no input simulation
 or direct setters for country/research/focus gameplay fields.
-Do not run attachment with Python optimization flags; its existing loader checks
-include assertions. Use only a disposable campaign and preserve your saves first.
+Use normal Python for the protected campaign workflow: some preparation and
+recovery helpers still use assertions. The native loader now uses explicit errors
+for its process, module, PE image and initialization checks. Use only a disposable
+campaign and preserve your saves first.
 
 ## Prepare a protected campaign
 

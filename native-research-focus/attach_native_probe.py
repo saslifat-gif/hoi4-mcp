@@ -9,7 +9,7 @@ from bind_session import verify_sources
 
 def export_rva(path,name):
  b=Path(path).read_bytes();pe=struct.unpack_from('<I',b,0x3c)[0];o=pe+24
- assert b[pe:pe+4]==b'PE\0\0' and struct.unpack_from('<H',b,o)[0]==0x20b
+ if b[pe:pe+4]!=b'PE\0\0' or struct.unpack_from('<H',b,o)[0]!=0x20b:raise ValueError('Native module must be a PE32+ image')
  n=struct.unpack_from('<H',b,pe+6)[0];sz=struct.unpack_from('<H',b,pe+20)[0];secs=[]
  for i in range(n):
   a=o+sz+40*i;vs,va,rs,raw=struct.unpack_from('<IIII',b,a+8);secs.append((va,rs,raw))
@@ -36,8 +36,10 @@ def attach(session_file,dll_file,expected_sha):
  if os.name!='nt':raise RuntimeError('Native attachment requires Windows')
  c=json.loads(Path(session_file).read_text());verify_sources(c)
  if c['country']!='GER' or c['mode']!='singleplayer_test' or not c.get('process_identity'):raise ValueError('Freshly bound GER test session required')
- pid=c['process_identity']['pid'];assert process_identity(pid)==c['process_identity']
- dll=Path(dll_file).resolve();assert hashlib.sha256(dll.read_bytes()).hexdigest()==expected_sha
+ pid=c['process_identity']['pid']
+ if process_identity(pid)!=c['process_identity']:raise RuntimeError('Bound game process changed before attachment')
+ dll=Path(dll_file).resolve()
+ if hashlib.sha256(dll.read_bytes()).hexdigest()!=expected_sha:raise RuntimeError('Pinned native module changed; no attachment attempted')
  sid_path=dll.parent/'session-id.txt'
  if sid_path.exists():
   if sid_path.read_text()!=c['session_id']:raise RuntimeError('Different native binding was not overwritten')
@@ -89,7 +91,7 @@ def attach(session_file,dll_file,expected_sha):
  h=openproc(0x43a,False,pid)
  if not h:raise ctypes.WinError(ctypes.get_last_error())
  def run(address,argument):
-  assert process_identity(pid)==c['process_identity']
+  if process_identity(pid)!=c['process_identity']:raise RuntimeError('Bound game process changed before native execution')
   t=create(h,None,0,address,argument,0,None)
   if not t:raise ctypes.WinError(ctypes.get_last_error())
   try:
@@ -98,7 +100,7 @@ def attach(session_file,dll_file,expected_sha):
    if not result(t,ctypes.byref(code)):raise ctypes.WinError(ctypes.get_last_error())
    return code.value
   finally:close(t)
- remote=None;loaded=False
+ remote=None
  try:
   sample=ctypes.create_string_buffer(32);count=ctypes.c_size_t()
   if not read(h,loader,sample,32,ctypes.byref(count)) or count.value!=32:raise RuntimeError('Remote loader bytes unreadable')
@@ -111,14 +113,15 @@ def attach(session_file,dll_file,expected_sha):
   if not remote:raise ctypes.WinError(ctypes.get_last_error())
   memory=ctypes.create_string_buffer(payload)
   if not write(h,remote,memory,len(payload),ctypes.byref(count)) or count.value!=len(payload):raise ctypes.WinError(ctypes.get_last_error())
-  run(loader,remote);loaded=True
+  run(loader,remote)
   free(h,remote,0,0x8000);remote=None
   now=modules();item=now.get(dll.name.lower())
   if not item or Path(item['path']).resolve()!=dll:raise RuntimeError('Expected probe module was not loaded')
   code=run(item['base']+export_rva(dll,'Initialize'),None)
   report={'pid':pid,'session_id':c['session_id'],'dll_sha256':expected_sha,'initialize_result':code,'module_base':hex(item['base']),'process_memory_writes':True,'uses_keyboard_or_mouse':False,'selection_commands_enabled':json.loads((dll.parent/'native-initialized.json').read_text()).get('selection_commands_enabled',False) if code==0 else False,'existing_loader_hook_preserved':loader_detoured}
   (dll.parent/'attachment-result.json').write_text(json.dumps(report,indent=2))
-  print(json.dumps(report));assert code==0,'Native initialization rejected attachment'
+  print(json.dumps(report))
+  if code!=0:raise RuntimeError('Native initialization rejected attachment')
  finally:
   # Retain an allocation after any uncertain loader result: its thread might
   # still be using the path. The temporary game's exit reclaims it.
