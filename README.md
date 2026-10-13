@@ -19,7 +19,8 @@ four-action AI loop were live-tested in earlier protected Germany campaigns.
 Queued capacity and construction requests of one to five levels passed protected
 live validation on 13 October 2026, including independent native-save comparison
 and request-ledger retention. See [results](native-research-focus/QUEUED_CAPACITY_VALIDATION_20261013.md).
-The sustained AI runner still needs live validation.
+A five-minute sustained research/focus run also passed, including three research
+completion/refill cycles. See [runner validation](native-research-focus/SUSTAINED_PEACETIME.md).
 Offline tests do not prove compatibility with another game version or a full campaign.
 
 Only Windows, an owned Germany single-player test campaign and executable SHA256

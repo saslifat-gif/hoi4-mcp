@@ -1,8 +1,21 @@
 # Sustained Germany policy runner
 
-Implemented locally on 13 October 2026. All 20 offline policy/runner tests pass
-after removing one duplicate uncertainty test;
-the sustained runner has not yet been tested in a live HOI4 campaign.
+Live-verified on 13 October 2026 in a protected Germany campaign on the pinned
+Windows executable. A five-minute run verified five new selections and three
+research completion/refill cycles: Basic Machine Tools → Mechanical Computing,
+Electronic Mechanical Engineering → Improved Machine Tools, and Construction I
+→ Construction II. The economic-growth focus was also selected and verified.
+Existing busy research slots and active focuses were preserved.
+
+The first attempt stopped on a changing research sample at maximum speed. The
+runner now waits only for the typed `SnapshotChanged` condition; invalid reads
+still stop it. The retained action was reconciled with its original ID before
+resuming. All 41 affected research, policy and runner tests passed on macOS and
+Windows. Both failed reports and the successful report were retained privately.
+The bounded run paused/disarmed on exit; the owned game was closed and recovery
+verified original autosave bytes/timestamp, restored the save-format setting and
+removed only the owned mod entry. No keyboard or mouse was used. This live check
+used the Python runner and native command backend, not a separate MCP wire test.
 
 The policy fills empty research slots from its existing economic technology
 priorities and selects its existing supported German economic focus. It waits
@@ -37,7 +50,7 @@ MCP clients can instead call `hoi4_ai_start` with `wait_for_choices=true` and po
 the caller supplies a duration limit and power checks. The default remains stop
 at idle for compatibility with bounded tests.
 
-Next live check: observe a research completion followed by a new supported
-assignment, ensure existing slots/focus remain intact, and verify shutdown and
-profile restoration. Keep the sustained-campaign Notion item unchecked until that
-live check passes.
+This completes the scoped sustained research/focus validation. Economy planning,
+additional focus paths, events, military play and save/load continuation remain
+outside this runner's scope. See `SUSTAINED_VALIDATION_20261013.json` for sanitized
+live results.

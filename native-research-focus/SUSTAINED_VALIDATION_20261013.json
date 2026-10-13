@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-13",
+  "country": "GER",
+  "game_sha256": "7dc947be34970da1e1c787bcddbe7f62b610ff258aebf8f06aa8b348f3a031d5",
+  "duration_seconds": 300,
+  "actual_HOI4": true,
+  "transport": "Python runner to native game-side command interface",
+  "uses_keyboard_or_mouse": false,
+  "verified": true,
+  "actions_verified": 5,
+  "completion_and_refill": [
+    {
+      "slot": 1,
+      "completed": "basic_machine_tools",
+      "next": "mechanical_computing"
+    },
+    {
+      "slot": 3,
+      "completed": "electronic_mechanical_engineering",
+      "next": "improved_machine_tools"
+    },
+    {
+      "slot": 2,
+      "completed": "construction1",
+      "next": "construction2"
+    }
+  ],
+  "run_result": {
+    "stage": "duration_complete"
+  },
+  "idle_polls": 10,
+  "pending_action_retained_and_reconciled": true,
+  "original_profile_restored": true
+}

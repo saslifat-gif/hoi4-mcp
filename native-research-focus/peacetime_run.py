@@ -6,6 +6,7 @@ Stopping retains pending gameplay IDs; it does not close or pause the game.
 import argparse,json,time
 from peacetime_agent import PeacetimeAgent
 from direct_process import require_ac_power
+from research_reader import SnapshotChanged
 
 def run(agent,seconds=300,action_budget=16):
  if type(seconds)!=int or not 1<=seconds<=3600:raise ValueError('Duration must be 1..3600 seconds')
@@ -15,7 +16,8 @@ def run(agent,seconds=300,action_budget=16):
  try:
   while time.monotonic()<deadline:
    require_ac_power()
-   result=agent.step()
+   try:result=agent.step()
+   except SnapshotChanged:result={'stage':'waiting_for_consistent_observation'}
    print(json.dumps(result),flush=True)
    if result['stage'].startswith('stopped'):break
    if not agent.load()['enabled']:break

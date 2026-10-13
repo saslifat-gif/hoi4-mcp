@@ -86,6 +86,6 @@ def read_research(raw,image,country,world,attempts=8):
    return {'research_slots':slots,'technologies':rows,'research_read_consistent':True,'research_sample_native_tick':tick,
     'research_cost_mode':'engine_override' if override else 'normal','research_completion_verified_against_native_list':True}
   except SnapshotChanged:
-   if attempt+1==attempts:raise ResearchReadError('Cannot obtain a consistent research snapshot; retry later')
+   if attempt+1==attempts:raise SnapshotChanged('Cannot obtain a consistent research snapshot; retry later')
    time.sleep(.01)
  raise ResearchReadError('No research snapshot')
