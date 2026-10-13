@@ -34,6 +34,22 @@ class Commands(unittest.TestCase):
         self.assertEqual(r['status'],'queued');self.assertFalse(r['engine_acknowledged'])
         self.assertFalse(r['gameplay_outcome_verified'])
         self.assertEqual(self.c.receipt(CID)['status'],'pending')
+    def test_stale_bridge_preserves_another_readers_snapshot(self):
+        reader=self.controller()
+        reader.submit({'kind':'snapshot'},NEXT)
+        self.ack(cid=NEXT,kind='snapshot')
+        self.c.submit(self.construct(),CID)
+        ledger=json.loads((self.root/'ledger.json').read_text())
+        self.assertEqual([cid for cid,_ in ledger['commands']],[NEXT,CID])
+        self.assertEqual(ledger['receipts'][NEXT]['status'],'acknowledged')
+        self.assertEqual(self.c.receipt(NEXT)['status'],'acknowledged')
+    def test_another_ledger_writer_blocks_publication(self):
+        before=(self.effect.read_bytes(),self.hook.read_bytes(),(self.root/'ledger.json').read_bytes())
+        lock=self.root/'ledger.lock';lock.write_text('owned by another writer')
+        with self.assertRaises(FileExistsError):self.c.submit(self.construct(),CID)
+        self.assertEqual(before,(self.effect.read_bytes(),self.hook.read_bytes(),(self.root/'ledger.json').read_bytes()))
+        lock.unlink()
+        self.assertEqual(self.c.submit(self.construct(),CID)['status'],'queued')
     def test_construction_cost_time_and_ownership_guards(self):
         text=self.compile(self.construct())
         self.assertIn('instant_build = no',text);self.assertIn('is_owned_and_controlled_by = GER',text)

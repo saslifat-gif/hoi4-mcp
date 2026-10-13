@@ -96,7 +96,13 @@ async def main():
   for (s,building),amount in expected.items():
    rows=[x for x in native_save['construction'] if x['building'].get('location')==str(s) and x['building'].get('template')==building]
    assert sum(int(x['amount']) for x in rows)==amount,(s,building,amount,rows)
-  report['verified']=True;save();print(json.dumps({'verified':True,'initial_capacity':capacity,'two_level_dockyard_verified':True,'five_level_civilian_verified':True,'independent_native_save_verified':True}))
+  ledger=json.loads(Path(c.config['state_path']).read_text())
+  retained={rid for rid,_ in ledger['commands']}
+  expected_ids={value for key,value in report.items() if key.endswith('_request_id')}
+  expected_ids.update(x['arguments']['request_id'] for x in report['commands'])
+  if not expected_ids<=retained:raise RuntimeError('Read/action request IDs were lost from the ledger')
+  report['request_ledger_verified']=True
+  report['verified']=True;save();print(json.dumps({'verified':True,'initial_capacity':capacity,'two_level_dockyard_verified':True,'five_level_civilian_verified':True,'independent_native_save_verified':True,'request_ledger_verified':True}))
  except BaseException as exc:report['error']=repr(exc);save();raise
  finally:
   if bridge is not None:bridge.terminate();bridge.wait(timeout=10)

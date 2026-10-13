@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 import secrets
 import math
+import functools
+import threading
 from command_catalog import equipment_guard, construction_state_guard
 
 FUNCTION = 'codex_mcp_commands_'
@@ -156,6 +158,26 @@ def parse_receipt(line):
             'uses_mouse_or_keyboard':False}
 
 
+def _ledger_operation(method):
+    @functools.wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._ledger_lock:
+            if self._ledger_depth:
+                return method(self, *args, **kwargs)
+            lock = self.state_path.with_suffix('.lock')
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            self._ledger_depth = 1
+            try:
+                if self.state_path.exists():
+                    self.state = self._read_state()
+                return method(self, *args, **kwargs)
+            finally:
+                self._ledger_depth = 0
+                os.close(fd)
+                lock.unlink()
+    return wrapped
+
+
 class DirectController:
     def __init__(self, effect_path, log_path, state_path, country='GER', process_guard=lambda: None, hook_path=None, session_id=None, catalog=None):
         self.effect_path, self.log_path, self.state_path = map(Path, (effect_path, log_path, state_path))
@@ -165,6 +187,8 @@ class DirectController:
         if not isinstance(session_id,str) or not HEX_ID.fullmatch(session_id):
             raise ValueError('Prepared session ID required')
         self.session_id,self.catalog=session_id,catalog or {'equipment':{}}
+        self._ledger_lock = threading.RLock()
+        self._ledger_depth = 0
         self.hook_path = Path(hook_path) if hook_path else None
         if not self.hook_path or not self.hook_path.is_file():
             raise RuntimeError('Existing native daily hook required')
@@ -174,27 +198,31 @@ class DirectController:
                       'commands': [], 'receipts': {},'publication':{},'startup_seen':False,
                       'campaign_invalidated':False}
         if self.state_path.exists():
-            state=json.loads(self.state_path.read_text(encoding='utf-8-sig'))
-            if state.get('protocol')!=2 or state.get('session_id')!=session_id or state.get('country')!=country:
-                raise RuntimeError('Ledger belongs to another session; it was not reset')
-            if not isinstance(state.get('commands'),list) or len(state['commands'])>64:
-                raise RuntimeError('Invalid command ledger')
-            seen=set()
-            for cid,command in state['commands']:
-                if cid in seen:raise RuntimeError('Duplicate ledger command')
-                compile_command(cid,country,command,session_id,self.catalog);seen.add(cid)
-            if not isinstance(state.get('receipts'),dict) or not isinstance(state.get('publication'),dict) or type(state.get('startup_seen')) is not bool:
-                raise RuntimeError('Invalid command ledger state')
-            for cid,receipt in state['receipts'].items():
-                if cid not in seen or not isinstance(receipt,dict) or receipt.get('session_id')!=session_id or receipt.get('command_id')!=cid or receipt.get('status') not in ('acknowledged','rejected'):
-                    raise RuntimeError('Invalid persisted receipt')
-            if type(state.get('campaign_invalidated')) is not bool:
-                raise RuntimeError('Invalid campaign ledger state')
-            if set(state['publication'])!=seen or any(p not in ('not_published','hook_prepared_effect_pending','effect_published_hook_pending','published') for p in state['publication'].values()):
-                raise RuntimeError('Invalid publication ledger')
-            state['startup_seen']=False
-            self.state=state
+            self.state = self._read_state()
+            self.state['startup_seen'] = False
         self.armed = False
+
+    def _read_state(self):
+        country, session_id = self.country, self.session_id
+        state=json.loads(self.state_path.read_text(encoding='utf-8-sig'))
+        if state.get('protocol')!=2 or state.get('session_id')!=session_id or state.get('country')!=country:
+            raise RuntimeError('Ledger belongs to another session; it was not reset')
+        if not isinstance(state.get('commands'),list) or len(state['commands'])>64:
+            raise RuntimeError('Invalid command ledger')
+        seen=set()
+        for cid,command in state['commands']:
+            if cid in seen:raise RuntimeError('Duplicate ledger command')
+            compile_command(cid,country,command,session_id,self.catalog);seen.add(cid)
+        if not isinstance(state.get('receipts'),dict) or not isinstance(state.get('publication'),dict) or type(state.get('startup_seen')) is not bool:
+            raise RuntimeError('Invalid command ledger state')
+        for cid,receipt in state['receipts'].items():
+            if cid not in seen or not isinstance(receipt,dict) or receipt.get('session_id')!=session_id or receipt.get('command_id')!=cid or receipt.get('status') not in ('acknowledged','rejected'):
+                raise RuntimeError('Invalid persisted receipt')
+        if type(state.get('campaign_invalidated')) is not bool:
+            raise RuntimeError('Invalid campaign ledger state')
+        if set(state['publication'])!=seen or any(p not in ('not_published','hook_prepared_effect_pending','effect_published_hook_pending','published') for p in state['publication'].values()):
+            raise RuntimeError('Invalid publication ledger')
+        return state
 
     def _save(self):
         atomic_text(self.state_path,json.dumps(self.state,indent=2))
@@ -231,6 +259,7 @@ class DirectController:
             raise RuntimeError('Native construction queue postcondition is missing')
         return r
 
+    @_ledger_operation
     def collect(self):
         self.process_guard()
         logs = self._logs()
@@ -244,8 +273,9 @@ class DirectController:
             self.armed=False
         ready=prefix+f'READY|country={self.country}'
         live=prefix+f'LIVE|country={self.country}'
-        if not self.state['campaign_invalidated'] and (ready in logs or live in logs) and not self.state['startup_seen']:
-            self.state['startup_seen']=True;changed=True
+        startup_seen=not self.state['campaign_invalidated'] and (ready in logs or live in logs)
+        if self.state['startup_seen']!=startup_seen:
+            self.state['startup_seen']=startup_seen;changed=True
         known=dict(self.state['commands'])
         for line in logs.splitlines():
             receipt = parse_receipt(line)
@@ -266,6 +296,7 @@ class DirectController:
             self._save()
         return logs
 
+    @_ledger_operation
     def status(self):
         self.process_guard()
         self.collect()
@@ -285,6 +316,7 @@ class DirectController:
                                 'DLC/mod overlays require an audited content binding; unresolved design restrictions are excluded',
                                 'engine script acknowledgment does not verify the gameplay outcome']}
 
+    @_ledger_operation
     def arm(self, enabled):
         if type(enabled) is not bool:
             raise ValueError('enabled must be boolean')
@@ -295,6 +327,7 @@ class DirectController:
         self.armed = enabled
         return {'armed': enabled, 'uses_mouse_or_keyboard': False}
 
+    @_ledger_operation
     def submit(self, command, request_id):
         self.process_guard()
         compile_command(request_id,self.country,command,self.session_id,self.catalog)
@@ -320,6 +353,7 @@ class DirectController:
         self._save()
         return self.deliver(cid)
 
+    @_ledger_operation
     def deliver(self,cid):
         self.collect()
         known=dict(self.state['commands'])
@@ -345,6 +379,7 @@ class DirectController:
         return {'command_id': cid, 'status': 'queued', 'engine_acknowledged': False,
                 'gameplay_outcome_verified':False,'uses_mouse_or_keyboard': False}
 
+    @_ledger_operation
     def receipt(self, cid):
         if not any(known == cid for known, _ in self.state['commands']):
             raise ValueError('Unknown command ID')

@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-13",
+  "country": "GER",
+  "game_sha256": "7dc947be34970da1e1c787bcddbe7f62b610ff258aebf8f06aa8b348f3a031d5",
+  "choices_dll_sha256": "c9bb633775b9da0cf7e604c439d42a8fc10879c72d45d4dca2d3d1c5d9346720",
+  "verified": true,
+  "actual_MCP": true,
+  "uses_keyboard_or_mouse": false,
+  "initial_game_date": "1936.01.22.24",
+  "final_game_date": "1936.02.16.24",
+  "initial_shared_capacity": 5,
+  "main_state": 53,
+  "request_ledger_verified": true,
+  "independent_native_save_verified": true,
+  "original_profile_restored": true,
+  "cases": [
+    {
+      "building": "industrial_complex",
+      "levels": 1,
+      "status": "acknowledged"
+    },
+    {
+      "building": "industrial_complex",
+      "levels": 5,
+      "status": "rejected"
+    },
+    {
+      "building": "arms_factory",
+      "levels": 4,
+      "status": "acknowledged"
+    },
+    {
+      "building": "industrial_complex",
+      "levels": 1,
+      "status": "rejected"
+    },
+    {
+      "building": "arms_factory",
+      "levels": 1,
+      "status": "rejected"
+    },
+    {
+      "building": "dockyard",
+      "levels": 2,
+      "status": "acknowledged"
+    },
+    {
+      "building": "industrial_complex",
+      "levels": 5,
+      "status": "acknowledged"
+    }
+  ]
+}

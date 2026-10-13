@@ -16,8 +16,10 @@ or a complete autonomous HOI4 player.
 
 Research/focus selection, scripted construction/production, pause/speed and a
 four-action AI loop were live-tested in earlier protected Germany campaigns.
-The latest Python cleanup was tested offline. The bundled new choices module,
-queued multi-level construction and sustained AI runner still need live validation.
+Queued capacity and construction requests of one to five levels passed protected
+live validation on 13 October 2026, including independent native-save comparison
+and request-ledger retention. See [results](native-research-focus/QUEUED_CAPACITY_VALIDATION_20261013.md).
+The sustained AI runner still needs live validation.
 Offline tests do not prove compatibility with another game version or a full campaign.
 
 Only Windows, an owned Germany single-player test campaign and executable SHA256
@@ -85,6 +87,8 @@ Use a unique 32-character lowercase hex request ID for each intended action.
 Repeat the same ID after a timeout or uncertain receipt; do not invent a new ID.
 A queued request is not proof of an executed action. A scripted ACK is not proof
 of construction insertion or production output. Inspect the relevant state.
+Ledger operations lock and reload shared state to preserve request IDs and receipts
+across readers. A conflicting writer fails before publication; retain the same ID.
 Busy research slots and active focuses are protected. Read snapshots are immutable
 and dated; mutations revalidate eligibility when executed.
 
