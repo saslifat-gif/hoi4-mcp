@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+sessions/
+recovery/
+offline-backups/
+lean-metrics/
+*.hoi4
+*.zip
+*.pdb
+*.lib
+.commands-token
+*token*
+.env*
+.DS_Store
