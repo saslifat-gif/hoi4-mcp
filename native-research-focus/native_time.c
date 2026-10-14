@@ -62,6 +62,7 @@ static int read_file(const wchar_t *name,char *out,DWORD cap){
  DWORD n=0;BOOL ok=ReadFile(f,out,cap-1,&n,NULL);CloseHandle(f);out[n]=0;
  return ok&&n&&n<cap-1;
 }
+#include "notification_refresh.h"
 /* All changes go through the ordinary engine commands on CInGameIdler::frame.
  * Hook runs even while paused. No worker-thread execution or input synthesis. */
 static int paused(uintptr_t idler){return ((unsigned char(*)(void*))(image+0xdd85c0))((void*)idler)!=0;}
@@ -72,12 +73,18 @@ static void reconcile(uintptr_t idler,uintptr_t world){
  char request[160],reqsid[33],rid[33],kind[16],extra;int value;
  if(!read_file(L"time-request.txt",request,sizeof request))return;
  if(sscanf(request,"%32[a-f0-9]|%32[a-f0-9]|%15[a-z]|%d%c",reqsid,rid,kind,&value,&extra)!=4||strcmp(reqsid,sid)||!hex_id(rid))return;
- if((strcmp(kind,"pause")&&strcmp(kind,"speed"))||(!strcmp(kind,"pause")?(value!=0&&value!=1):(value<1||value>5)))return;
+ if(!strcmp(kind,"alert")){if(value<0||value>81)return;}
+ else if((strcmp(kind,"pause")&&strcmp(kind,"speed"))||(!strcmp(kind,"pause")?(value!=0&&value!=1):(value<1||value>5)))return;
  wchar_t name[80],full[MAX_PATH];swprintf(name,80,L"time-receipt-%hs.json",rid);path(full,name);
  if(GetFileAttributesW(full)!=INVALID_FILE_ATTRIBUTES)return;
  char out[700];int before_pause=paused(idler),before_speed=*(int*)(world+0x4bc)+1;
  if(attempts>=64){snprintf(out,sizeof out,"{\"session_id\":\"%s\",\"request_id\":\"%s\",\"stage\":\"rejected\",\"reason\":\"session_limit\"}",sid,rid);write_atomic(name,out);return;}
  snprintf(out,sizeof out,"{\"session_id\":\"%s\",\"request_id\":\"%s\",\"stage\":\"execution_uncertain\"}",sid,rid);if(!write_atomic(name,out))return;attempts++;
+ if(!strcmp(kind,"alert")){
+  char fresh[65536];const char *error=before_pause?refresh_alert_result(value,fresh,sizeof fresh,rid,*(int*)(world+0x468)):"pause_required";
+  if(error)snprintf(fresh,sizeof fresh,"{\"session_id\":\"%s\",\"request_id\":\"%s\",\"stage\":\"rejected\",\"reason\":\"%s\"}",sid,rid,error);
+  write_atomic(name,fresh);return;
+ }
  __declspec(align(16)) unsigned char cmd[0x60]={0};
  if(!strcmp(kind,"pause")){
   if(!execute_pause_command(before_pause,value,image+0x296a560,

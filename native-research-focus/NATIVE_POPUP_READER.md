@@ -54,3 +54,5 @@ The new native reader is 65 lines and reuses the existing process reader, string
 validation, formatting parser and snapshot retry. No size reduction, dependency or
 new native DLL was introduced. The supported event-ID path now uses direct native
 identity instead of requiring a script/localization scan.
+
+A subsequent [fresh-message request](FRESH_NOTIFICATION_READER.md) invokes the engine getter while paused and records its generation tick. Passive cache-read limits above still apply.

@@ -27,6 +27,10 @@ def create_server(controller):
   from popup_reader import capture_popups
   return capture_popups(controller.path,controller.config['game_root'],kind,include_script_references,language)
  @server.tool()
+ def hoi4_notification_message(request_id:str,native_alert_kind:int)->dict:
+  """Generate one currently shown global-alert message on the paused game thread. Requires arming and the fresh-read time backend. Native UI cache writes occur; no input or gameplay setters. Keep the same request ID to poll. Freshness is at the returned receipt tick, not later turns."""
+  return time.submit(request_id,'alert',native_alert_kind)
+ @server.tool()
  def hoi4_peacetime_snapshot(request_id:str)->dict:
   """Request/reconcile resources, factories, political power and available supported choices. Use a new 32-hex ID for a fresh read; repeat the same ID only to poll. Game must advance. Ready snapshots are immutable and dated; commands revalidate when executed."""
   return controller.peacetime_snapshot(request_id)

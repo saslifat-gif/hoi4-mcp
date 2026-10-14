@@ -1,0 +1,30 @@
+{
+  "checks": {
+    "running_rejected": true,
+    "paused": true,
+    "research_generated": true,
+    "factory_generated": true,
+    "receipt_tick_unchanged": true,
+    "timestamp_recorded": true,
+    "duplicate_is_original_receipt": true,
+    "hidden_rejected": true,
+    "no_input": true
+  },
+  "verified": true,
+  "actual_MCP": true,
+  "engine_messages_generated": 2,
+  "game_profile_recovery_pending": false,
+  "date": "2026-10-14",
+  "offline_tests": {
+    "mac": 20,
+    "windows_python": 9
+  },
+  "profile_restored": true,
+  "owned_game_closed": true,
+  "limitations": [
+    "Freshness is at generation tick; repeat IDs return the original receipt.",
+    "Requires a paused, armed, process-bound protected Germany campaign.",
+    "Native getter invocation writes UI cache; no input or gameplay-field setters.",
+    "Other owners, option IDs and complete tooltip formatting remain unresolved."
+  ]
+}
