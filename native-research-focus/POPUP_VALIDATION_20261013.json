@@ -1,0 +1,30 @@
+{
+  "test_date": "2026-10-13",
+  "focused_tests": {
+    "mac": 180,
+    "windows": 180,
+    "adapter": 14,
+    "backend": 166
+  },
+  "live_mcp_checks": {
+    "event_exact_text": true,
+    "popup_exact_text": true,
+    "global_alerts_read": true,
+    "diplomatic_request_layout_read": true,
+    "no_truncation": true,
+    "read_only": true
+  },
+  "live_counts": {
+    "events": 1,
+    "popups": 1,
+    "notification_containers": 15
+  },
+  "diplomatic_request_test": "authored layout fixture; no diplomatic request submitted",
+  "recovery_status": "pending confirmation: SSH unreachable after testing",
+  "limitations": [
+    "Engine-local shown does not prove physical screen visibility.",
+    "Semantic event, option and alert IDs remain unresolved.",
+    "Icon-only notification message text is not decoded.",
+    "Complete child and universal popup coverage are not claimed."
+  ]
+}
