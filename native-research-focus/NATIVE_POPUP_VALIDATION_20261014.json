@@ -1,0 +1,26 @@
+{
+  "checks": {
+    "native_event_id": true,
+    "cached_messages": true,
+    "research_message": true,
+    "read_only": true,
+    "freshness_limit": true,
+    "pause_verified": true
+  },
+  "alert_containers": 16,
+  "messages_read": 16,
+  "verified": true,
+  "date": "2026-10-14",
+  "focused_tests": {
+    "mac": 207,
+    "windows": 207
+  },
+  "original_profile_restored": true,
+  "owned_game_closed": true,
+  "limitations": [
+    "Native cache freshness and complete message coverage remain unverified.",
+    "Some native strings contain untranslated localization keys.",
+    "Other alert owners and option IDs/effects remain unresolved.",
+    "Engine-local shown does not prove physical screen visibility."
+  ]
+}

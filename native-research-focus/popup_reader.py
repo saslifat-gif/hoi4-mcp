@@ -31,12 +31,13 @@ def summarize_window(root):
  titles=[x['text'] for x in fields if x['name'] in ('Title','title')]
  descriptions=[x['text'] for x in fields if x['name'] in ('Description','description')]
  labels=[x['text'] for x in fields if x['name']=='Name'] if root['source']==SURFACES['events'] else []
- return {'title':titles[0] if len(titles)==1 else None,'description':descriptions[0] if len(descriptions)==1 else None,
+ native=root.get('native_popup',{})
+ return {'native_popup':native,'title':titles[0] if len(titles)==1 else None,'description':descriptions[0] if len(descriptions)==1 else None,
          'icons':icons,'content_status':'rendered_text' if any(x['text'] for x in fields) else 'icon_only',
          'option_labels':labels,'option_ids_verified':False,'option_enabled_state':None,
          'widget_id':root['widget_id'],'name':root['name'],'source':root['source'],
          'engine_local_shown':True,'text_fields':fields,'buttons':buttons,'unresolved':unresolved,
-         'event_id':None,'option_effects_verified':False,'complete_child_coverage':False,
+         'event_id':native.get('event_id'),'event_id_verified':native.get('event_id_verified',False),'option_effects_verified':False,'complete_child_coverage':False,
          'effective_visibility':None,'text_last_update_unix':None}
 
 def window_roots(records):
@@ -77,4 +78,4 @@ def capture_popups(session_file,game_root,kind='all',include_script_references=F
          'process_writes':False,'atomic_game_frame':False,'complete_popup_coverage':False,
          'limitations':['Engine local shown flags do not prove physical screen visibility.',
                         'Each surface is a separate sample; hidden ancestors in the returned tree are excluded.',
-                        'Unsupported containers and event/option/alert semantic ID bindings remain unresolved; icon-only alerts have no decoded message.']}
+                        'Unsupported owners, option IDs and non-global alerts remain unresolved; native alert caches may be stale or contain untranslated localization keys.']}

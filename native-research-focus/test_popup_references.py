@@ -18,6 +18,9 @@ class ReferenceTests(unittest.TestCase):
  def enrich(self,window):enrich_window(window,load_references(self.root,'en'));return window
  def test_exact_event_fingerprint_yields_candidate_not_native_identity(self):
   w=self.enrich(self.event());self.assertEqual(w['event_id_candidates'][0]['event_id'],'sample.1');self.assertEqual(w['event_id_reference_status'],'unique_literal_match');self.assertIsNone(w['event_id']);self.assertFalse(w['event_id_verified'])
+ def test_script_reference_does_not_downgrade_verified_native_identity(self):
+  w=self.event();w.update(event_id='native.1',event_id_verified=True);self.enrich(w)
+  self.assertEqual(w['event_id'],'native.1');self.assertTrue(w['event_id_verified'])
  def test_duplicate_event_fingerprint_is_ambiguous(self):
   self.write('events/second.txt','news_event = { id = other.2 title = TITLE desc = BODY option = { name = OPT } }')
   self.assertEqual(self.enrich(self.event())['event_id_reference_status'],'ambiguous')

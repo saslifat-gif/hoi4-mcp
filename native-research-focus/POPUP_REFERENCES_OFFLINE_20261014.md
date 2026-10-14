@@ -40,3 +40,5 @@ This is source verification, not a new live popup/MCP identity test.
 Initial feature round: +73 runtime lines, +50 test lines. Continuation fixes:
 +4 runtime lines and +9 test lines. Runtime scope is now 6,113 lines; tests 2,500.
 No size reduction, dependency or native offset was added. Existing parser reused.
+
+The subsequent [native reader](NATIVE_POPUP_READER.md) now supplies verified event IDs and global-alert cache strings; the static-reference limits above still apply.

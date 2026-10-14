@@ -56,7 +56,7 @@ def enrich_window(window,refs):
     candidates.append({k:event[k] for k in ('event_id','source','title_key','description_key','option_keys')})
   window['event_id_candidates']=candidates
   window['event_id_reference_status']='unique_literal_match' if len(candidates)==1 else 'ambiguous' if candidates else 'unresolved'
-  window['event_id_verified']=False
+  window.setdefault('event_id_verified',False)
  if window['source']=='interface/alerts.gui':
   names={x['name'] for x in window['icons']+window['buttons']};messages=[]
   for binding in refs['tooltips']:

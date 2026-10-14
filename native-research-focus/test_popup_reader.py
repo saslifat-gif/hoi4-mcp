@@ -11,6 +11,9 @@ class PopupTests(unittest.TestCase):
   result=summarize_window(self.root(node('a','title','Same'),node('b','desc','Same'),node('c','option','Continue',kind='.?AVCButtonStandard@@')))
   self.assertEqual([x['text'] for x in result['text_fields']],['Same','Same','Continue'])
   self.assertEqual(result['buttons'][0]['name'],'option');self.assertIsNone(result['event_id'])
+ def test_native_metadata_survives_summary(self):
+  root=self.root();root['native_popup']={'status':'native_event_id','event_id':'native.1','event_id_verified':True}
+  d=summarize_window(root);self.assertEqual(d['event_id'],'native.1');self.assertTrue(d['event_id_verified'])
  def test_hidden_ancestor_excludes_cached_descendant_text(self):
   parent=node('p','old_window',shown=False,kind='.?AVCContainerWindow@@');parent['container_children']={'children':[node('a','old_title','Cached')]}
   self.assertEqual(summarize_window(self.root(parent))['text_fields'],[])

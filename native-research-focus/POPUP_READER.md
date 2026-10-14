@@ -19,8 +19,9 @@ Icon metadata is retained; alerts without decoded message text report `icon_only
 
 Engine-local shown flags do not prove physical screen visibility. Samples are not
 an atomic game frame. Complete child coverage and universal popup coverage are not
-claimed. Semantic event/option/alert IDs, option effects and enabled state, icon-only
-message text and unsupported layouts remain unresolved. A bounded retry handles
+claimed. Supported event IDs and global-alert cached messages now have native bindings;
+see [native reader validation](NATIVE_POPUP_READER.md). Option IDs, effects, enabled
+state, cache freshness and unsupported owners remain unresolved. A bounded retry handles
 observed GUI-registry changes; unsupported builds and identity failures still fail.
 
 ## Verification

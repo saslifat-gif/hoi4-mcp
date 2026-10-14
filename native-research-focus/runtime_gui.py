@@ -989,6 +989,9 @@ class NativeGuiReader:
                 records[gui]['engine_show_state']=shown_state if shown_state is not None else self.widget_show_state(gui)
                 # Detailed traversal belongs only to the requested page.
                 if not offset<=len(matches)-1<offset+limit:continue
+                if kind=='.?AVCContainerWindow@@' and filename['text'] in ('interface/eventwindow.gui','interface/alerts.gui'):
+                    from native_popup import read_native_popup
+                    records[gui]['native_popup']=read_native_popup(self,gui)
                 if kind=='.?AVCIcon@@':records[gui]['icon_frame']=self.icon_frame(gui)
                 if kind=='.?AVCCheckBox@@':records[gui]['checkbox_selection']=self.checkbox_selection(gui)
                 if kind=='.?AVCContainerWindow@@':
