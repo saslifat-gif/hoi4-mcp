@@ -12,6 +12,7 @@ or a complete autonomous HOI4 player.
 - Read-only event/popup text, native event IDs, event-definition option indices/name keys, world-tension popup scanning and global-alert cached messages; see [reader scope and validation](native-research-focus/NATIVE_POPUP_READER.md).
 - Ordinary research/focus selection, construction requests and new supported land-equipment production lines.
 - Native pause/resume and game speed controls.
+- Paused native world-tension panel open/close, bound text reading and close-fade readback; see [scope and validation](native-research-focus/WORLD_TENSION_READER.md).
 - Engine-generated global-alert messages while paused, with durable IDs and generation ticks; see [fresh reader](native-research-focus/FRESH_NOTIFICATION_READER.md).
 - A bounded Germany research/focus policy with durable request IDs and readback.
 - Experimental queued construction capacity and multi-level construction commands.

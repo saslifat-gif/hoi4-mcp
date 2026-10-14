@@ -32,7 +32,10 @@ class PopupTests(unittest.TestCase):
  def test_world_tension_notification_surface_is_requested(self):
   sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[]}
   with patch('popup_reader.capture_live_ui',return_value=sample) as read:capture_popups('session','game','world_tension')
-  self.assertEqual(read.call_args.kwargs['source'],'interface/worldtensionwindowpopup.gui')
+  self.assertEqual(read.call_args.kwargs['source'],'interface/worldtensionwindowpopup.gui');self.assertEqual(read.call_args.kwargs['expand_depth'],5)
+ def test_world_tension_title_uses_its_installed_widget_name(self):
+  root=self.root(node('t','window_name','World tension'),node('r','Name','A row'));root['source']='interface/worldtensionwindowpopup.gui'
+  d=summarize_window(root);self.assertEqual(d['title'],'World tension');self.assertEqual(d['option_labels'],[])
  def test_changed_registry_retries_a_read_only_sample(self):
   sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[]}
   with patch('popup_reader.capture_live_ui',side_effect=[GuiSnapshotChanged('changed'),sample]) as read:

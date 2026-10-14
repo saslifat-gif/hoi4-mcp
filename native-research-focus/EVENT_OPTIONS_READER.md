@@ -52,3 +52,5 @@ See [sanitized results](EVENT_OPTIONS_VALIDATION_20261014.json).
 Runtime scope: 6,250 -> 6,266 lines (+16). Test scope: 2,635 -> 2,667 (+32).
 The existing process reader, string decoder, container traversal and snapshot retry
 are reused. No code-size reduction, dependency or native DLL was added.
+
+A later [world-tension update](WORLD_TENSION_READER.md) verifies native opening, title/control/empty-state text and close-fade readback. Nonempty row content remains pending.

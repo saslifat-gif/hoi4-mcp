@@ -28,7 +28,7 @@ def summarize_window(root):
     for child in detail.get(group,[]):
      if 'widget_id' in child:visit(child,blocked)
  visit(root)
- titles=[x['text'] for x in fields if x['name'] in ('Title','title')]
+ titles=[x['text'] for x in fields if x['name'] in (('window_name',) if root['source']==SURFACES['world_tension'] else ('Title','title'))]
  descriptions=[x['text'] for x in fields if x['name'] in ('Description','description')]
  labels=[x['text'] for x in fields if x['name']=='Name'] if root['source']==SURFACES['events'] else []
  native=root.get('native_popup',{})
@@ -52,7 +52,7 @@ def window_roots(records):
  return [record for record in records if record['widget_id'] not in nested]
 
 def capture_popups(session_file,game_root,kind='all',include_script_references=False,language='en'):
- if kind not in ('all',*SURFACES):raise ValueError('kind must be all, events, popups or notifications')
+ if kind not in ('all',*SURFACES):raise ValueError('kind must be all, events, popups, notifications or world_tension')
  refs=None
  if include_script_references:
   from popup_references import load_references,enrich_window
@@ -63,7 +63,7 @@ def capture_popups(session_file,game_root,kind='all',include_script_references=F
   for attempt in range(3):
    try:
     sample=capture_live_ui(session_file,game_root,source=source,native_type='CContainerWindow',
-                           engine_state='shown',expand_depth=3,limit=100)
+                           engine_state='shown',expand_depth=5 if category=='world_tension' else 3,limit=100)
     break
    except GuiSnapshotChanged:
     if attempt==2:raise

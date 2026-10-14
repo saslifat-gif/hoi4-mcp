@@ -2,7 +2,8 @@
 import struct
 from runtime_gui import GuiSnapshotChanged,native_markup
 
-OWNER_LAYOUTS={'.?AVCEventWindow@@':(56,0x29a4818,0x29a4878,0x50),
+OWNER_LAYOUTS={'.?AVCWorldTensionPopUpWindow@@':(56,0x2a133d8,0x2a13478,0x570),
+               '.?AVCEventWindow@@':(56,0x29a4818,0x29a4878,0x50),
                '.?AVCGlobalAlertIcon@@':(40,0x29468f8,0x2946920,0x38)}
 SIGNATURES={0x1238fe0:'488bc4488958104889701855574156488da848ffffff4881eca00100000f2970',
             0x1239a40:'40534883ec20488bd9488b89581200004883e980488d93500d0000488b01ff50',
@@ -54,6 +55,9 @@ def read_native_popup(reader,gui):
   return {'status':'native_event_id','event_id':value['raw_text'],'event_id_verified':True,
           'binding':'CEventWindow.current_event.CEvent.id','native_options':options,
           'option_identity_scope':'event_definition_not_displayed_choices','atomic_game_frame':False}
+ if kind=='.?AVCWorldTensionPopUpWindow@@':
+  verify();return {'status':'native_window_state','window':'world_tension','engine_local_shown':bool(header[117]&8),
+                   'runtime_binding_verified':True,'physical_visibility_verified':False,'atomic_game_frame':False}
  signature(0xb0cc50);signature(0xb0ab70)
  manager=pointer(owner+0x30);alert=struct.unpack('<I',read(owner+0x48,4))[0];context=pointer(owner+0x558)
  if alert>81:return {'status':'unsupported_alert_kind','native_alert_kind':alert}

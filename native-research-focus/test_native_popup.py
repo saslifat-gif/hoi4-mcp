@@ -45,6 +45,12 @@ class NativePopupTests(unittest.TestCase):
    return original(address,size)
   self.r.read=read
   with self.assertRaises(GuiSnapshotChanged):read_native_popup(self.r,self.gui)
+ def test_world_tension_state_has_verified_owner_binding(self):
+  header=bytearray(160);struct.pack_into('<Q',header,80,self.owner+56);header[117]=8;self.p.put(self.gui,header)
+  self.ptr(self.owner,self.p.base+0x2a133d8);self.ptr(self.owner+56,self.p.base+0x2a13478);self.ptr(self.owner+0x570,self.gui-48)
+  self.r.types[self.p.base+0x2a13478]='.?AVCWorldTensionPopUpWindow@@'
+  d=read_native_popup(self.r,self.gui);self.assertEqual(d['status'],'native_window_state');self.assertTrue(d['engine_local_shown']);self.assertFalse(d['physical_visibility_verified'])
+  self.ptr(self.owner+0x570,0x40000000);self.assertEqual(read_native_popup(self.r,self.gui)['status'],'nested_panel')
  def test_native_id_is_bound_without_text_matching(self):
   self.event_binding();d=read_native_popup(self.r,self.gui);self.assertEqual(d['event_id'],'fixture.1');self.assertTrue(d['event_id_verified'])
  def test_nested_panel_does_not_get_owner_root_identity(self):

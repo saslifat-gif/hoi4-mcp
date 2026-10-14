@@ -1,0 +1,70 @@
+{
+  "checks": {
+    "running_rejected": true,
+    "open_verified": true,
+    "native_title_matches_installed_localisation": true,
+    "native_owner_binding": true,
+    "empty_state_message_read": true,
+    "panel_buttons_read": true,
+    "closed_verified": true,
+    "hidden_after_close": true,
+    "duplicate_receipt_unchanged": true,
+    "close_observation_immutable": true,
+    "native_receipt_preserved": true,
+    "duplicate_does_not_reopen": true,
+    "clock_unchanged": true,
+    "read_only_snapshot": true
+  },
+  "verified": true,
+  "actual_MCP": true,
+  "shown_text_fields": 7,
+  "field_names": [
+    "close_button",
+    "sort_date_button",
+    "sort_country_button",
+    "sort_value_button",
+    "show_wars_button",
+    "window_name",
+    "no_surces_info"
+  ],
+  "complete_child_coverage": false,
+  "recovery_pending": false,
+  "date": "2026-10-14",
+  "original_save_profile_restored": true,
+  "owned_game_closed": true,
+  "offline_tests": {
+    "mac": 215,
+    "windows_python": 214
+  },
+  "tested_dll_sha256": "22d2ecba6394a5b0dedc1f437ad41ea812852d0a5eaead3d1829543cdb70d8c5",
+  "lean_measurement": {
+    "runtime_before": 6266,
+    "runtime_after": 6330,
+    "runtime_net_lines": 64,
+    "test_before": 2667,
+    "test_after": 2743,
+    "test_net_lines": 76,
+    "deltas": {
+      "native-research-focus/world_tension_window.h": 34,
+      "native-research-focus/native_time.c": 8,
+      "native-research-focus/time_controller.py": 14,
+      "native-research-focus/native_mcp_server.py": 4,
+      "native-research-focus/popup_reader.py": 0,
+      "native-research-focus/native_popup.py": 4,
+      "native-research-focus/runtime_gui.py": 0,
+      "native-research-focus/test_world_tension_window.c": 25,
+      "native-research-focus/test_world_tension_window.py": 11,
+      "native-research-focus/test_notification_refresh.py": 31,
+      "native-research-focus/test_popup_reader.py": 3,
+      "native-research-focus/test_native_popup.py": 6
+    },
+    "mac_focused_tests_passed": 215,
+    "windows_python_tests_passed": 214,
+    "live_MCP_checks_passed": 14,
+    "binary_bytes_before": 577536,
+    "binary_bytes_after": 582144,
+    "new_dependencies": 0,
+    "new_DLLs": 0,
+    "simplification": "Existing game-frame hook, durable request channel and process/snapshot reader reused. Code size increased for this feature and the observed close-fade bug."
+  }
+}

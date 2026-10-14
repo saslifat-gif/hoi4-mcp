@@ -59,3 +59,5 @@ Runtime scope: 6,182 → 6,250 lines (+68). Tests: 2,562 → 2,635 (+73).
 The 55-line helper reuses the existing callback, arming and receipt channel. There is
 no size reduction, additional DLL or new dependency. The replaced time DLL is
 577,536 bytes (previously 179,712).
+
+The current time backend additionally supports the [world-tension panel](WORLD_TENSION_READER.md), whose tested binary pin supersedes the historical fresh-alert pin above. That UI update does not establish broader alert-message or formatting coverage.
