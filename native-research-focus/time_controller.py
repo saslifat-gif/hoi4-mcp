@@ -1,7 +1,7 @@
 """Idempotent semantic time requests to the paused-safe native frame callback."""
 import json,re,hashlib,ctypes,time
 from direct_controller import atomic_text
-DLL_SHA='22d2ecba6394a5b0dedc1f437ad41ea812852d0a5eaead3d1829543cdb70d8c5'
+DLL_SHA='c1db6bf4b4337d6b9fadd1f7428ce33d9af5248fa64fc7994f12f2ad17e1ba60'
 def read_native_json(path):
  # Windows can briefly deny opens while the native writer atomically replaces a file.
  # Retry reads only; commands and malformed observations are never retried here.
@@ -53,6 +53,8 @@ class TimeController:
   if not isinstance(rid,str) or not re.fullmatch('[a-f0-9]{32}',rid):raise ValueError('32-hex request ID required')
   if kind in ('pause','worldtension'):
    if type(value)!=bool:raise ValueError('paused must be boolean')
+  elif kind=='worldview':
+   if type(value)!=int or value not in (0,4):raise ValueError('World-tension view must be 0 or 4')
   elif kind=='speed':
    if type(value)!=int or not 1<=value<=5:raise ValueError('Speed is an integer 1..5')
   elif kind=='alert':

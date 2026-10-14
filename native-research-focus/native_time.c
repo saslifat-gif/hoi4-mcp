@@ -74,7 +74,8 @@ static void reconcile(uintptr_t idler,uintptr_t world){
  char request[160],reqsid[33],rid[33],kind[16],extra;int value;
  if(!read_file(L"time-request.txt",request,sizeof request))return;
  if(sscanf(request,"%32[a-f0-9]|%32[a-f0-9]|%15[a-z]|%d%c",reqsid,rid,kind,&value,&extra)!=4||strcmp(reqsid,sid)||!hex_id(rid))return;
- if(!strcmp(kind,"worldtension")){if(value!=0&&value!=1)return;}
+ if(!strcmp(kind,"worldview")){if(value!=0&&value!=4)return;}
+ else if(!strcmp(kind,"worldtension")){if(value!=0&&value!=1)return;}
  else if(!strcmp(kind,"alert")){if(value<0||value>81)return;}
  else if((strcmp(kind,"pause")&&strcmp(kind,"speed"))||(!strcmp(kind,"pause")?(value!=0&&value!=1):(value<1||value>5)))return;
  wchar_t name[80],full[MAX_PATH];swprintf(name,80,L"time-receipt-%hs.json",rid);path(full,name);
@@ -82,10 +83,10 @@ static void reconcile(uintptr_t idler,uintptr_t world){
  char out[700];int before_pause=paused(idler),before_speed=*(int*)(world+0x4bc)+1;
  if(attempts>=64){snprintf(out,sizeof out,"{\"session_id\":\"%s\",\"request_id\":\"%s\",\"stage\":\"rejected\",\"reason\":\"session_limit\"}",sid,rid);write_atomic(name,out);return;}
  snprintf(out,sizeof out,"{\"session_id\":\"%s\",\"request_id\":\"%s\",\"stage\":\"execution_uncertain\"}",sid,rid);if(!write_atomic(name,out))return;attempts++;
- if(!strcmp(kind,"worldtension")){
-  int before=0,after=0;const char *error=before_pause?world_tension_window(value,&before,&after):"pause_required";
+ if(!strcmp(kind,"worldtension")||!strcmp(kind,"worldview")){
+  int before=0,after=0;const char *error=before_pause?world_tension_action(!strcmp(kind,"worldview")?1:value,&before,&after,!strcmp(kind,"worldview")?value:-1):"pause_required";
   if(error)snprintf(out,sizeof out,"{\"session_id\":\"%s\",\"request_id\":\"%s\",\"stage\":\"%s\",\"reason\":\"%s\"}",sid,rid,world_tension_failure_stage(error),error);
-  else snprintf(out,sizeof out,"{\"session_id\":\"%s\",\"request_id\":\"%s\",\"stage\":\"window_verified\",\"window\":\"world_tension\",\"before_shown\":%s,\"after_shown\":%s,\"native_tick\":%d,\"ui_state_writes\":true,\"uses_keyboard_or_mouse\":false}",sid,rid,before?"true":"false",after?"true":"false",*(int*)(world+0x468));
+  else snprintf(out,sizeof out,"{\"session_id\":\"%s\",\"request_id\":\"%s\",\"stage\":\"window_verified\",\"window\":\"world_tension\",\"before_shown\":%s,\"after_shown\":%s,\"requested_view\":%d,\"native_tick\":%d,\"ui_state_writes\":true,\"uses_keyboard_or_mouse\":false}",sid,rid,before?"true":"false",after?"true":"false",!strcmp(kind,"worldview")?value:-1,*(int*)(world+0x468));
   write_atomic(name,out);return;
  }
  if(!strcmp(kind,"alert")){

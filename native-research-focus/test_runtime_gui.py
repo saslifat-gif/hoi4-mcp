@@ -1031,7 +1031,7 @@ class RuntimeGuiTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'implementation changed'):self.reader.icon_frame(gui)
     def test_known_non_frame_icons_preserve_explicit_unsupported_state(self):
         gui,sprite=self.setup_icon()
-        for kind in ('.?AVCCorneredTileSprite@@','.?AV?$C2dPieChartTemplate@USPieVertex@@@@'):
+        for kind in ('.?AVCCorneredTileSprite@@','.?AV?$C2dPieChartTemplate@USPieVertex@@@@','.?AVCProgressbarSprite@@'):
             with self.subTest(kind=kind):
                 self.reader.types[self.p.base+0x3000]=kind
                 result=self.reader.icon_frame(gui)
@@ -1064,6 +1064,11 @@ class RuntimeGuiTests(unittest.TestCase):
         result=self.reader.snapshot(native_type='CIcon')['matches'][0]
         self.assertEqual(result['icon_frame']['status'],'unsupported_non_frame_component')
         self.assertIsNone(result['effective_visibility'])
+
+    def test_war_progressbar_keeps_snapshot_without_inventing_frame(self):
+        self.setup_icon();self.reader.types[self.p.base+0x3000]='.?AVCProgressbarSprite@@'
+        result=self.reader.snapshot(native_type='CIcon')['matches'][0]['icon_frame']
+        self.assertEqual(result['status'],'unsupported_non_frame_component');self.assertIsNone(result['native_frame_value'])
 
     def test_icon_rejects_wrong_sprite_type(self):
         gui,sprite=self.setup_icon();self.reader.types[self.p.base+0x3000]='.?AVCEditBox@@'

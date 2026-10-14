@@ -36,6 +36,21 @@ class PopupTests(unittest.TestCase):
  def test_world_tension_title_uses_its_installed_widget_name(self):
   root=self.root(node('t','window_name','World tension'),node('r','Name','A row'));root['source']='interface/worldtensionwindowpopup.gui'
   d=summarize_window(root);self.assertEqual(d['title'],'World tension');self.assertEqual(d['option_labels'],[])
+ def test_populated_world_rows_stay_grouped(self):
+  grid=node('grid','list',kind='.?AVCStandardGridBox@@')
+  grid['grid_children']={'rows':[{'index':0,'widget_id':'row0','container_children':{'children':[node('c','country_name','Germany'),node('d','date','1936.1.1'),node('v','value','5%'),node('r','reason','Test threat')]}},{'index':1,'widget_id':'row1','container_children':{'children':[node('w','war_name','German-Polish War')]}}]}
+  root=self.root(grid);root['source']='interface/worldtensionwindowpopup.gui';d=summarize_window(root)
+  self.assertEqual(d['world_tension_rows'][0]['country_name'],'Germany');self.assertEqual(d['world_tension_rows'][0]['value'],'5%')
+  self.assertEqual(d['war_rows'][0]['war_name'],'German-Polish War');self.assertEqual(d['war_rows'][0]['index'],1)
+ def test_unsupported_world_row_remains_unresolved(self):
+  grid=node('grid','list',kind='.?AVCStandardGridBox@@');grid['grid_children']={'rows':[{'index':0,'status':'unsupported_row_binding'}]}
+  root=self.root(grid);root['source']='interface/worldtensionwindowpopup.gui';d=summarize_window(root)
+  self.assertEqual(d['world_tension_rows'],[]);self.assertEqual(d['war_rows'],[]);self.assertEqual(d['unresolved'][0]['reason'],'unsupported_row_binding')
+ def test_closed_world_panel_excludes_locally_shown_orphan_row(self):
+  row=self.root(node('w','war_name','Cached war'));row['name']='world_tension_war_entry';row['source']='interface/worldtensionwindowpopup.gui'
+  sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[row]}
+  with patch('popup_reader.capture_live_ui',return_value=sample):d=capture_popups('session','game','world_tension')
+  self.assertEqual(d['samples'][0]['windows'],[])
  def test_changed_registry_retries_a_read_only_sample(self):
   sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[]}
   with patch('popup_reader.capture_live_ui',side_effect=[GuiSnapshotChanged('changed'),sample]) as read:

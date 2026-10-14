@@ -12,6 +12,12 @@ class NotificationRefreshTests(unittest.TestCase):
  def test_refresh_uses_existing_durable_request_channel(self):
   self.assertEqual(self.clock.submit(self.rid,'alert',8)['stage'],'pending')
   self.assertEqual((self.root/'time-request.txt').read_text(),self.sid+'|'+self.rid+'|alert|8')
+ def test_world_view_requires_supported_mode_and_preserves_id(self):
+  for value in (True,-1,1,5,'wars'):
+   with self.assertRaises(ValueError):self.clock.submit(self.rid,'worldview',value)
+  self.clock.submit(self.rid,'worldview',4)
+  self.assertEqual((self.root/'time-request.txt').read_text(),self.sid+'|'+self.rid+'|worldview|4')
+  with self.assertRaisesRegex(ValueError,'payload mismatch'):self.clock.submit(self.rid,'worldview',0)
  def test_refreshed_receipt_reuses_id_without_resubmission(self):
   self.clock.submit(self.rid,'alert',8)
   receipt={'session_id':self.sid,'request_id':self.rid,'stage':'alert_refreshed','native_tick':42,'raw_title':'Research','raw_body':'Slots available'}

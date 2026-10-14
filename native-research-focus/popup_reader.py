@@ -4,7 +4,7 @@ SURFACES={'events':'interface/eventwindow.gui','popups':'interface/popupwindow.g
 EDGES=('container_children','fixed_window_children','grid_children','listbox_children','dropdown_components')
 
 def summarize_window(root):
- fields=[];buttons=[];icons=[];unresolved=[];seen=set()
+ fields=[];buttons=[];icons=[];unresolved=[];seen=set();tension_rows=[];war_rows=[]
  def visit(node,blocked=False):
   key=node['widget_id']
   if key in seen:return
@@ -26,14 +26,21 @@ def summarize_window(root):
    detail=node.get(edge,{})
    for group in ('children','rows'):
     for child in detail.get(group,[]):
-     if 'widget_id' in child:visit(child,blocked)
+     if 'widget_id' in child:
+      start=len(fields);visit(child,blocked)
+      if edge=='grid_children' and root['source']==SURFACES['world_tension']:
+       values={x['name']:x['text'] for x in fields[start:]}
+       if 'war_name' in values:war_rows.append({'index':child['index'],'widget_id':child['widget_id'],'war_name':values['war_name']})
+       elif any(k in values for k in ('country_name','date','value','reason')):
+        tension_rows.append({'index':child['index'],'widget_id':child['widget_id'],**{k:values.get(k) for k in ('country_name','date','value','reason')}})
+     elif edge=='grid_children':unresolved.append({'reason':child.get('status','unreadable_row'),'row_index':child.get('index')})
  visit(root)
  titles=[x['text'] for x in fields if x['name'] in (('window_name',) if root['source']==SURFACES['world_tension'] else ('Title','title'))]
  descriptions=[x['text'] for x in fields if x['name'] in ('Description','description')]
  labels=[x['text'] for x in fields if x['name']=='Name'] if root['source']==SURFACES['events'] else []
  native=root.get('native_popup',{})
  return {'native_popup':native,'title':titles[0] if len(titles)==1 else None,'description':descriptions[0] if len(descriptions)==1 else None,
-         'icons':icons,'content_status':'rendered_text' if any(x['text'] for x in fields) else 'icon_only',
+         'world_tension_rows':tension_rows,'war_rows':war_rows,'icons':icons,'content_status':'rendered_text' if any(x['text'] for x in fields) else 'icon_only',
          'option_labels':labels,'native_options':native.get('native_options',[]),'option_ids_verified':'native_options' in native,'option_enabled_state':None,'option_identity_scope':native.get('option_identity_scope'),
          'widget_id':root['widget_id'],'name':root['name'],'source':root['source'],
          'engine_local_shown':True,'text_fields':fields,'buttons':buttons,'unresolved':unresolved,
@@ -67,7 +74,8 @@ def capture_popups(session_file,game_root,kind='all',include_script_references=F
     break
    except GuiSnapshotChanged:
     if attempt==2:raise
-  windows=[summarize_window(x) for x in window_roots(sample['matches'])]
+  windows=[summarize_window(x) for x in window_roots(sample['matches'])
+           if category!='world_tension' or x['name']=='world_tension_popup']
   if refs is not None:
    for window in windows:enrich_window(window,refs)
   samples.append({'category':category,'captured_start_unix':sample['captured_start_unix'],

@@ -352,7 +352,7 @@ class NativeGuiReader:
         # These verified RTTI types are live non-frame icon components. Preserve
         # the rest of a popup without interpreting their fields as CSprite.
         component_type=self.typename(sprite) if 0x10000<=sprite<0x7fffffffffff else None
-        if component_type in ('.?AVCCorneredTileSprite@@','.?AV?$C2dPieChartTemplate@USPieVertex@@@@'):
+        if component_type in ('.?AVCCorneredTileSprite@@','.?AV?$C2dPieChartTemplate@USPieVertex@@@@','.?AVCProgressbarSprite@@'):
             component_header=self.read(sprite,8)
             if component_header is None:raise RuntimeError('Icon component header unavailable')
             if self.read(gui,160)!=header or self.read(gui+232,8)!=binding or self.read(sprite,8)!=component_header or self.typename(sprite)!=component_type:

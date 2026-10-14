@@ -31,6 +31,11 @@ def create_server(controller):
   """Open/close the world-tension panel through its native UI handler while paused and armed. UI state writes occur. No input or gameplay setters; poll the same ID and read popup_snapshot(kind='world_tension') afterward."""
   return time.submit(request_id,'worldtension',shown)
  @server.tool()
+ def hoi4_world_tension_view(request_id:str,view:str)->dict:
+  """Select tension or wars through the bound native panel handler while paused and armed, then read popup_snapshot. No keyboard or mouse."""
+  if view not in ('tension','wars'):raise ValueError('View must be tension or wars')
+  return time.submit(request_id,'worldview',4 if view=='wars' else 0)
+ @server.tool()
  def hoi4_notification_message(request_id:str,native_alert_kind:int)->dict:
   """Generate one currently shown global-alert message on the paused game thread. Requires arming and the fresh-read time backend. Native UI cache writes occur; no input or gameplay setters. Keep the same request ID to poll. Freshness is at the returned receipt tick, not later turns."""
   return time.submit(request_id,'alert',native_alert_kind)
