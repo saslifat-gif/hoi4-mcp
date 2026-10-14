@@ -33,9 +33,9 @@ diplomatic-request layout fixture. It returned one event, one popup and 15
 notification containers without truncation. No diplomatic request was submitted.
 See [sanitized results](POPUP_VALIDATION_20261013.json).
 
-The final campaign recovery is pending because the Windows SSH route became
-unreachable after testing. Do not reuse that campaign until the owned-session
-recovery helper has restored the original save, settings and mod selection.
+The final owned campaign recovery passed on 14 October 2026. HOI4 was already
+closed; the original autosave bytes and timestamp, save-format setting and mod
+selection were restored. Other settings updates and request IDs were preserved.
 Private process data, request IDs, saves and copied installed GUI files are excluded
 from this repository.
 

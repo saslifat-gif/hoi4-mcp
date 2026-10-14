@@ -20,7 +20,7 @@
     "notification_containers": 15
   },
   "diplomatic_request_test": "authored layout fixture; no diplomatic request submitted",
-  "recovery_status": "pending confirmation: SSH unreachable after testing",
+  "recovery_status": "verified on 2026-10-14; original autosave and targeted profile settings restored; no HOI4 process remaining",
   "limitations": [
     "Engine-local shown does not prove physical screen visibility.",
     "Semantic event, option and alert IDs remain unresolved.",

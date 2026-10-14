@@ -22,10 +22,10 @@ def create_server(controller):
   """Read coherent native research levels, completion, percentages and slot assignments, plus current focus and canonical IDs. Completion is checked against the engine completed list; percentages use the native completion threshold."""
   return controller.snapshot()
  @server.tool()
- def hoi4_popup_snapshot(kind:str='all')->dict:
-  """Read engine-shown events, generic popups and global alert/diplomatic-request containers. Text, option labels and icon metadata are read-only; no arming needed. Physical visibility and semantic IDs/effects remain unverified. Icon-only alerts report missing message text."""
+ def hoi4_popup_snapshot(kind:str='all',include_script_references:bool=False,language:str='en')->dict:
+  """Read engine-shown events, generic popups and global alert/diplomatic-request containers. Text, option labels and icon metadata are read-only; no arming needed. Physical visibility and semantic IDs/effects remain unverified. Optional script references supply literal event-ID candidates and explicit alert tooltip templates in en/zh; these are not verified native identities or current messages."""
   from popup_reader import capture_popups
-  return capture_popups(controller.path,controller.config['game_root'],kind)
+  return capture_popups(controller.path,controller.config['game_root'],kind,include_script_references,language)
  @server.tool()
  def hoi4_peacetime_snapshot(request_id:str)->dict:
   """Request/reconcile resources, factories, political power and available supported choices. Use a new 32-hex ID for a fresh read; repeat the same ID only to poll. Game must advance. Ready snapshots are immutable and dated; commands revalidate when executed."""

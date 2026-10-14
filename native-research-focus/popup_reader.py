@@ -50,8 +50,12 @@ def window_roots(records):
  for record in records:descendants(record)
  return [record for record in records if record['widget_id'] not in nested]
 
-def capture_popups(session_file,game_root,kind='all'):
+def capture_popups(session_file,game_root,kind='all',include_script_references=False,language='en'):
  if kind not in ('all',*SURFACES):raise ValueError('kind must be all, events, popups or notifications')
+ refs=None
+ if include_script_references:
+  from popup_references import load_references,enrich_window
+  refs=load_references(game_root,language)
  samples=[]
  for category,source in SURFACES.items():
   if kind!='all' and kind!=category:continue
@@ -62,10 +66,13 @@ def capture_popups(session_file,game_root,kind='all'):
     break
    except GuiSnapshotChanged:
     if attempt==2:raise
+  windows=[summarize_window(x) for x in window_roots(sample['matches'])]
+  if refs is not None:
+   for window in windows:enrich_window(window,refs)
   samples.append({'category':category,'captured_start_unix':sample['captured_start_unix'],
                   'captured_end_unix':sample['captured_end_unix'],'truncated':sample['truncated'],
                   'root_grouping':'known_traversal_edges',
-                  'windows':[summarize_window(x) for x in window_roots(sample['matches'])]})
+                  'windows':windows})
  return {'status':'sampled','samples':samples,'screen_capture':False,'input_events':False,
          'process_writes':False,'atomic_game_frame':False,'complete_popup_coverage':False,
          'limitations':['Engine local shown flags do not prove physical screen visibility.',
