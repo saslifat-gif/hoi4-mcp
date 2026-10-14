@@ -11,7 +11,7 @@ Event GUI roots must point to a pinned `CEventWindow` tooltip owner whose contai
 points back to the requested root. Its current-event pointer must identify a pinned
 `CEvent`. The canonical ID comes from that object's string field, rather than a
 localized title match. Returned `event_id_verified: true` means this native ownership
-chain was verified. Option IDs/effects and enabled state remain unresolved.
+chain was verified. A subsequent [option reader](EVENT_OPTIONS_READER.md) adds native event-definition indices/name keys; displayed availability, effects and enabled state remain unresolved.
 
 Global-alert roots must bind back to a pinned `CGlobalAlertIcon`. The reader follows
 the exact vector, record stride, native alert kind and context-key comparisons used

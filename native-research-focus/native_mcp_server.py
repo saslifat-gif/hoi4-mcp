@@ -23,7 +23,7 @@ def create_server(controller):
   return controller.snapshot()
  @server.tool()
  def hoi4_popup_snapshot(kind:str='all',include_script_references:bool=False,language:str='en')->dict:
-  """Read engine-shown events, generic popups and global alert/diplomatic-request containers. Text, option labels and icon metadata are read-only; no arming needed. Supported event IDs are native-bound; global alerts include native cached title/body text with unverified freshness. Physical visibility, option IDs/effects and other alert owners remain unresolved. Optional en/zh script references do not prove current messages."""
+  """Read engine-shown events, generic popups and global alert/diplomatic-request containers. Text, option labels and icon metadata are read-only; no arming needed. Supported event IDs are native-bound; global alerts include native cached title/body text with unverified freshness. Native option name keys and indices describe event definitions, not displayed availability or effects. World-tension popup text is also sampled. Physical visibility, option availability/effects and other owner-specific data remain unresolved. Optional en/zh script references do not prove current messages."""
   from popup_reader import capture_popups
   return capture_popups(controller.path,controller.config['game_root'],kind,include_script_references,language)
  @server.tool()

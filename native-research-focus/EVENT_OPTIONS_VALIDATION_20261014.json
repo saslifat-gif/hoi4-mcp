@@ -1,0 +1,47 @@
+{
+  "checks": {
+    "native_event_id": true,
+    "native_option_names": true,
+    "native_indices": true,
+    "visible_option_labels": true,
+    "definition_scope_explicit": true,
+    "world_tension_surface": true,
+    "paused": true,
+    "read_only": true
+  },
+  "verified": true,
+  "actual_MCP": true,
+  "world_tension_live_text_verified": false,
+  "native_option_count": 2,
+  "duplicate_caption_live_verified": false,
+  "fixture_localization_status": "active language rendered literal name keys",
+  "recovery_pending": false,
+  "original_save_profile_restored": true,
+  "owned_game_closed": true,
+  "offline_tests": {
+    "mac": 47,
+    "windows": 47
+  },
+  "date": "2026-10-14",
+  "lean_measurement": {
+    "runtime_before": 6250,
+    "runtime_after": 6266,
+    "runtime_net_lines": 16,
+    "test_before": 2635,
+    "test_after": 2667,
+    "test_net_lines": 32,
+    "deltas": {
+      "native-research-focus/native_popup.py": 16,
+      "native-research-focus/popup_reader.py": 0,
+      "native-research-focus/native_mcp_server.py": 0,
+      "native-research-focus/test_native_popup.py": 25,
+      "native-research-focus/test_popup_reader.py": 7
+    },
+    "mac_focused_tests": 47,
+    "windows_focused_tests": 47,
+    "live_MCP_checks": 8,
+    "new_dependencies": 0,
+    "new_DLLs": 0,
+    "simplification": "Existing process/string/traversal readers reused; code grew to add supported coverage."
+  }
+}

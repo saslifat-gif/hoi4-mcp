@@ -1,6 +1,6 @@
 """Read engine-shown event and generic popup containers; never infer screen visibility."""
 from runtime_gui import capture_live_ui,GuiSnapshotChanged
-SURFACES={'events':'interface/eventwindow.gui','popups':'interface/popupwindow.gui','notifications':'interface/alerts.gui'}
+SURFACES={'events':'interface/eventwindow.gui','popups':'interface/popupwindow.gui','notifications':'interface/alerts.gui','world_tension':'interface/worldtensionwindowpopup.gui'}
 EDGES=('container_children','fixed_window_children','grid_children','listbox_children','dropdown_components')
 
 def summarize_window(root):
@@ -34,7 +34,7 @@ def summarize_window(root):
  native=root.get('native_popup',{})
  return {'native_popup':native,'title':titles[0] if len(titles)==1 else None,'description':descriptions[0] if len(descriptions)==1 else None,
          'icons':icons,'content_status':'rendered_text' if any(x['text'] for x in fields) else 'icon_only',
-         'option_labels':labels,'option_ids_verified':False,'option_enabled_state':None,
+         'option_labels':labels,'native_options':native.get('native_options',[]),'option_ids_verified':'native_options' in native,'option_enabled_state':None,'option_identity_scope':native.get('option_identity_scope'),
          'widget_id':root['widget_id'],'name':root['name'],'source':root['source'],
          'engine_local_shown':True,'text_fields':fields,'buttons':buttons,'unresolved':unresolved,
          'event_id':native.get('event_id'),'event_id_verified':native.get('event_id_verified',False),'option_effects_verified':False,'complete_child_coverage':False,
@@ -78,4 +78,4 @@ def capture_popups(session_file,game_root,kind='all',include_script_references=F
          'process_writes':False,'atomic_game_frame':False,'complete_popup_coverage':False,
          'limitations':['Engine local shown flags do not prove physical screen visibility.',
                         'Each surface is a separate sample; hidden ancestors in the returned tree are excluded.',
-                        'Unsupported owners, option IDs and non-global alerts remain unresolved; native alert caches may be stale or contain untranslated localization keys.']}
+                        'Unsupported owner-specific data, displayed-option availability and non-global alert generation remain unresolved; native alert caches may be stale or contain untranslated localization keys.']}

@@ -9,7 +9,7 @@ or a complete autonomous HOI4 player.
 ## Current scope
 
 - Structured research progress/completion, focuses, resources, factories, fuel and political power.
-- Read-only event/popup text, native event IDs and global-alert cached messages; see [reader scope and validation](native-research-focus/NATIVE_POPUP_READER.md).
+- Read-only event/popup text, native event IDs, event-definition option indices/name keys, world-tension popup scanning and global-alert cached messages; see [reader scope and validation](native-research-focus/NATIVE_POPUP_READER.md).
 - Ordinary research/focus selection, construction requests and new supported land-equipment production lines.
 - Native pause/resume and game speed controls.
 - Engine-generated global-alert messages while paused, with durable IDs and generation ticks; see [fresh reader](native-research-focus/FRESH_NOTIFICATION_READER.md).

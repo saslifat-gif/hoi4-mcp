@@ -26,6 +26,13 @@ class PopupTests(unittest.TestCase):
   option=node('option','Name','Option label');root=self.root(panel,desc,option)
   self.assertEqual(window_roots([panel,root]),[root])
   result=summarize_window(root);self.assertEqual(result['title'],'Event title');self.assertEqual(result['description'],'Event body');self.assertEqual(result['option_labels'],['Option label'])
+ def test_native_option_identity_scope_survives_summary(self):
+  root=self.root();root['native_popup']={'native_options':[{'native_index':0,'name_key':'event.a'}],'option_identity_scope':'event_definition_not_displayed_choices'}
+  d=summarize_window(root);self.assertTrue(d['option_ids_verified']);self.assertEqual(d['native_options'][0]['name_key'],'event.a');self.assertEqual(d['option_identity_scope'],'event_definition_not_displayed_choices')
+ def test_world_tension_notification_surface_is_requested(self):
+  sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[]}
+  with patch('popup_reader.capture_live_ui',return_value=sample) as read:capture_popups('session','game','world_tension')
+  self.assertEqual(read.call_args.kwargs['source'],'interface/worldtensionwindowpopup.gui')
  def test_changed_registry_retries_a_read_only_sample(self):
   sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[]}
   with patch('popup_reader.capture_live_ui',side_effect=[GuiSnapshotChanged('changed'),sample]) as read:

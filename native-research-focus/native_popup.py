@@ -35,9 +35,25 @@ def read_native_popup(reader,gui):
   if r.typename(event)!='.?AVCEvent@@' or pointer(event)!=r.base+0x2999be8:raise RuntimeError('Native event type mismatch')
   read(event+0x20,32);value=r._string(event+0x20)
   if value['status']!='read':raise GuiSnapshotChanged('Native event ID unreadable or changed')
+  # CEventWindow's option selection iterates CEvent.options and uses each
+  # CEventOption.index; its name parser stores the key at +0x178.
+  array,capacity,count=struct.unpack('<QII',read(event+0x368,16))
+  if count>capacity or capacity>1000:raise RuntimeError('Native event option extent invalid')
+  options=[]
+  for i in range(count):
+   option=pointer(array+i*8)
+   if r.typename(option)!='.?AVCEventOption@@' or pointer(option)!=r.base+0x2999b48:raise RuntimeError('Native event option type mismatch')
+   read(option+0x178,32);name=r._string(option+0x178)
+   if name['status']!='read':raise GuiSnapshotChanged('Native event option ID unreadable or changed')
+   index=struct.unpack('<i',read(option+0x1f0,4))[0]
+   if index<0 or any(x['native_index']==index for x in options):raise RuntimeError('Native event option index invalid')
+   options.append({'native_index':index,'name_key':name['raw_text'],'identity_verified':True,
+                   'availability_verified':False,'effects_verified':False})
+   if r._string(option+0x178)!=name:raise GuiSnapshotChanged('Native event option ID changed during read')
   verify()
   return {'status':'native_event_id','event_id':value['raw_text'],'event_id_verified':True,
-          'binding':'CEventWindow.current_event.CEvent.id','atomic_game_frame':False}
+          'binding':'CEventWindow.current_event.CEvent.id','native_options':options,
+          'option_identity_scope':'event_definition_not_displayed_choices','atomic_game_frame':False}
  signature(0xb0cc50);signature(0xb0ab70)
  manager=pointer(owner+0x30);alert=struct.unpack('<I',read(owner+0x48,4))[0];context=pointer(owner+0x558)
  if alert>81:return {'status':'unsupported_alert_kind','native_alert_kind':alert}
