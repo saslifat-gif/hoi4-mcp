@@ -1,0 +1,41 @@
+{
+  "version": "v0.1.0",
+  "scope": "Germany research/focus peacetime MVP",
+  "Windows_focused_tests": 26,
+  "Mac_focused_tests": 26,
+  "live_checks": {
+    "four_verified_selections": true,
+    "no_pending_ai_intent": true,
+    "final_pause_verified": true,
+    "disarmed": true,
+    "autosave_bytes_restored": true,
+    "autosave_timestamp_restored": true,
+    "profile_recovery": true,
+    "game_closed": true
+  },
+  "verified_actions": [
+    {
+      "kind": "research",
+      "id": "basic_machine_tools"
+    },
+    {
+      "kind": "research",
+      "id": "construction1"
+    },
+    {
+      "kind": "research",
+      "id": "electronic_mechanical_engineering"
+    },
+    {
+      "kind": "focus",
+      "id": "GER_prioritize_economic_growth"
+    }
+  ],
+  "uses_keyboard_or_mouse": false,
+  "new_Dlls": 0,
+  "new_dependencies": 0,
+  "runtime_lines_added": 123,
+  "test_lines_added": 38,
+  "code_size_reduction_percent": 0,
+  "actual_MCP_wire_test_this_round": false
+}

@@ -1,13 +1,15 @@
 """Prepare an owned peacetime-reader validation campaign with verified recovery copies."""
-import argparse,hashlib,json,shutil,uuid
+import argparse,hashlib,json,shutil,uuid,re
 from pathlib import Path
 from prepare_session import prepare
 from activate_session import activate
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--game-root',required=True);parser.add_argument('--user-root',required=True)
+parser.add_argument('--session-root')
 args=parser.parse_args()
 base=Path(__file__).resolve().parent.parent;user=Path(args.user_root).resolve()
-root=base/'sessions'/('queued-capacity-20261013-'+uuid.uuid4().hex[:8])
+root=Path(args.session_root).resolve() if args.session_root else base/'sessions'/('queued-capacity-20261013-'+uuid.uuid4().hex[:8])
+if root.parent!=base/'sessions' or not re.fullmatch(r'queued-capacity-20261013-[a-f0-9]{8}',root.name) or root.exists():raise RuntimeError('New owned session directory required')
 c=prepare(Path(args.game_root),root,user/'logs'/'game.log')
 recovery=root/'recovery';recovery.mkdir();manifest=[]
 for name,p in [('settings.txt',user/'settings.txt'),('autosave.hoi4',user/'save games'/'autosave.hoi4')]:

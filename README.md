@@ -1,10 +1,28 @@
-# HOI4 MCP
+# HOI4 MCP — Peacetime MVP
 
 Experimental game-side commands and structured observations for Hearts of Iron IV.
 An AI can request supported actions through MCP without keyboard or mouse input.
 This repository contains a generated-mod bridge, an external Python service and
 source-built native Windows modules. It is not a standalone Steam Workshop mod
 or a complete autonomous HOI4 player.
+
+## Run the MVP
+
+The MVP is a bounded Germany research/focus AI with structured observations and
+MCP economic commands. Download the release ZIP, install the Python dependencies
+below, then run from a Windows PowerShell terminal while logged into the desktop:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Start-Mvp.ps1 -Python .\.venv\Scripts\python.exe
+```
+
+The launcher prepares a protected temporary campaign, starts HOI4 on AC power,
+installs the four pinned backends, verifies up to four research/focus selections,
+then pauses/disarms, closes its owned game and restores your original profile.
+It retains reports, saves and request IDs under `sessions/`. Default duration is
+180 seconds; `-Seconds 60` runs a shorter demo. Custom paths use `-GameRoot` and
+`-UserRoot`. Existing settings and an autosave are required. See
+[MVP quick start and limits](MVP_QUICKSTART.md).
 
 ## Current scope
 
@@ -126,5 +144,7 @@ See `native-research-focus/SUSTAINED_PEACETIME.md` for the bounded research/focu
 
 这是实验性的 HOI4 游戏侧 MCP 接口，通过结构化命令与状态读取工作，不使用键盘鼠标。
 项目包含模组生成器、外部 Python 服务及原生 Windows 模块，不能作为普通创意工坊模组单独运行。
-目前只支持指定版本的德国单人临时测试战役；多级建设与持续 AI 尚待真实游戏验证。
+目前支持指定版本的德国单人临时测试战役；多级建设与有限研究/国策 AI 已通过真实游戏验证。
+安装 Python 依赖后运行 Start-Mvp.ps1，即可启动临时战役、运行有限 AI、关闭游戏并恢复原配置。
+此 MVP 不包含战争 AI，也不支持读档后继续运行。
 请先备份存档，明确区分离线测试、游戏日志回执和真实游戏状态验证。
