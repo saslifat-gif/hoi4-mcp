@@ -1,0 +1,35 @@
+{
+  "checks": {
+    "legacy_message": true,
+    "external_focus_message": true,
+    "nonempty_notification_text": true,
+    "native_owner_binding": true,
+    "authored_event_id": true,
+    "nested_color_stack": true,
+    "country_flag": true,
+    "icon_tokens": true,
+    "plain_text_no_native_markers": true,
+    "paused_clock_unchanged": true,
+    "read_only_samples": true,
+    "idea_expiration_from_earlier_campaign": true
+  },
+  "verified": true,
+  "actual_MCP": true,
+  "owner_types": [
+    ".?AVCLegacyMessagePopUpNotification@NNotification@@",
+    ".?AVCIdeaExpiredNotification@NNotification@@",
+    ".?AVCExternallyCompletedFocusNotification@NNotification@@"
+  ],
+  "coverage_across_two_campaigns": true,
+  "same_campaign_all_three": false,
+  "Mac_focused_tests": 239,
+  "Windows_focused_tests": 239,
+  "original_profiles_restored": true,
+  "owned_tasks_removed": true,
+  "recovery_pending": false,
+  "incomplete_runs_preserved": true,
+  "later_idea_repeat": "15-minute owned task stopped process before repeat; no new request or fixture was applied",
+  "regional_theater_messages_verified": false,
+  "physical_visibility_verified": false,
+  "atlas_asset_identity_verified": false
+}

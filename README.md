@@ -10,6 +10,7 @@ or a complete autonomous HOI4 player.
 
 - Structured research progress/completion, focuses, resources, factories, fuel and political power.
 - Read-only event/popup text, native event IDs, event-definition option indices/name keys, world-tension popup scanning and global-alert cached messages; see [reader scope and validation](native-research-focus/NATIVE_POPUP_READER.md).
+- Native notification-popup titles/messages and bitmap-font color/icon/flag tokens; see [verified scope](native-research-focus/NOTIFICATION_FORMAT_READER.md).
 - Ordinary research/focus selection, construction requests and new supported land-equipment production lines.
 - Native pause/resume and game speed controls.
 - Paused native world-tension panel open/close, tension/war view selection, populated row text and close-fade readback; see [scope and validation](native-research-focus/WORLD_TENSION_READER.md).

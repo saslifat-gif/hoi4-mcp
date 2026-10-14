@@ -32,16 +32,21 @@ ICON_DEFINITION_PARSERS={
 
 CHECKBOX_LABEL_UPDATE_SIGNATURE=bytes.fromhex('48895c24084889742410574883ec50488bf9488d542430488b89b8000000e8bd530a00488bd8488bb798010000488d8f78010000483bc87416488bd0488378180f7603488b104c8b4010e88100e6fd')
 
-PAIRED_NATIVE_ICON=re.compile('\x13([^\\s\\x00-\\x1f]+)\x13')
+NATIVE_ICON_NAME=re.compile('[A-Za-z0-9_|]{1,128}')
 
 def plain_native(text):
-    text=PAIRED_NATIVE_ICON.sub(lambda m:'[icon:'+m.group(1)+']',text)
-    text=re.sub('\x11.', '', text)
-    return text
+    result=[]
+    for run in native_markup(text):
+        kind=run['kind']
+        if kind=='icon':result.append('[icon:'+run['name']+']')
+        elif kind=='flag':result.append('[flag:'+run['tag']+']')
+        elif kind=='atlas_icon':result.append('[atlas:'+str(run['atlas_index'])+':'+str(run['frame'])+']')
+        else:result.append(run.get('text',run.get('raw','')))
+    return ''.join(result)
 
 def native_markup(text):
-    """Preserve ordered native formatting without inferring gameplay conditions."""
-    runs=[];color=None;start=0;i=0
+    """Parse the pinned bitmap-font token grammar; retain unknown/malformed controls."""
+    runs=[];colors=[];color=None;start=0;i=0
     def emit(end):
         if end>start:runs.append({'kind':'text','text':text[start:end],'color_code':color})
     while i<len(text):
@@ -52,22 +57,31 @@ def native_markup(text):
                 break
             code=text[i+1]
             runs.append({'kind':'color_reset' if code=='!' else 'color','code':code})
-            color=None if code=='!' else code;i+=2;start=i
+            if code=='!':
+                if colors:colors.pop()
+            else:colors.append(code)
+            color=colors[-1] if colors else None;i+=2;start=i
         elif text[i]=='\x13':
-            emit(i);match=PAIRED_NATIVE_ICON.match(text,i)
+            emit(i);match=NATIVE_ICON_NAME.match(text,i+1)
             if match:
-                runs.append({'kind':'icon','name':match.group(1),'color_code':color})
-                i=match.end();start=i
-            elif re.fullmatch('[^\\s\\x00-\\x1f]*',text[i+1:]):
-                runs.append({'kind':'incomplete_icon','raw':text[i:]});i=len(text);start=i
+                runs.append({'kind':'icon','name':match.group(),'color_code':color})
+                i=match.end()
+                if i<len(text) and text[i]=='\x13':i+=1
             else:
-                # Some live engine strings have an unpaired icon marker. Its
-                # termination rules are unresolved: preserve it separately and
-                # keep parsing following text/colors instead of swallowing them.
-                runs.append({'kind':'unknown_control','raw':text[i],
-                             'codepoint':'U+0013','meaning_verified':False,
-                             'reason':'unpaired_icon_marker','color_code':color})
-                i+=1;start=i
+                runs.append({'kind':'unknown_control','raw':text[i],'codepoint':'U+0013',
+                             'meaning_verified':False,'reason':'empty_icon_token','color_code':color});i+=1
+            start=i
+        elif text[i]=='\x12':
+            emit(i);tag=text[i+1:i+4]
+            if len(tag)==3:runs.append({'kind':'flag','tag':tag,'color_code':color,'asset_identity_verified':False})
+            else:runs.append({'kind':'incomplete_flag','raw':text[i:]})
+            i+=1+len(tag);start=i
+        elif text[i] in ('\x14','\x1a'):
+            emit(i);payload=text[i+1:i+3] if text[i]=='\x1a' else ''
+            if text[i]=='\x14' or len(payload)==2 and payload.isascii() and payload.isdecimal():
+                runs.append({'kind':'atlas_icon','atlas_index':3 if payload else 0,'frame':int(payload) if payload else 0,'color_code':color,'asset_identity_verified':False})
+            else:runs.append({'kind':'incomplete_control','raw':text[i:i+1+len(payload)]})
+            i+=1+len(payload);start=i
         elif ord(text[i])<32 and text[i] not in '\t\r\n':
             emit(i)
             runs.append({'kind':'unknown_control','raw':text[i],
@@ -989,7 +1003,7 @@ class NativeGuiReader:
                 records[gui]['engine_show_state']=shown_state if shown_state is not None else self.widget_show_state(gui)
                 # Detailed traversal belongs only to the requested page.
                 if not offset<=len(matches)-1<offset+limit:continue
-                if kind=='.?AVCContainerWindow@@' and filename['text'] in ('interface/eventwindow.gui','interface/alerts.gui','interface/worldtensionwindowpopup.gui'):
+                if kind=='.?AVCContainerWindow@@' and (filename['text'] in ('interface/eventwindow.gui','interface/alerts.gui','interface/worldtensionwindowpopup.gui') or filename['text'].startswith('interface/notifications/')):
                     from native_popup import read_native_popup
                     records[gui]['native_popup']=read_native_popup(self,gui)
                 if kind=='.?AVCIcon@@':records[gui]['icon_frame']=self.icon_frame(gui)

@@ -2,10 +2,14 @@
 import struct
 from runtime_gui import GuiSnapshotChanged,native_markup
 
-OWNER_LAYOUTS={'.?AVCWorldTensionPopUpWindow@@':(56,0x2a133d8,0x2a13478,0x570),
+NOTIFICATION_OWNERS={'.?AVCExternallyCompletedFocusNotification@NNotification@@':(40,0x29b4378,0x29b43c8,0x50),
+                     '.?AVCIdeaExpiredNotification@NNotification@@':(40,0x2a1bcb0,0x2a1bd00,0x50),
+                     '.?AVCLegacyMessagePopUpNotification@NNotification@@':(40,0x2a02ea0,0x2a02ef0,0x50)}
+OWNER_LAYOUTS={**NOTIFICATION_OWNERS,'.?AVCWorldTensionPopUpWindow@@':(56,0x2a133d8,0x2a13478,0x570),
                '.?AVCEventWindow@@':(56,0x29a4818,0x29a4878,0x50),
                '.?AVCGlobalAlertIcon@@':(40,0x29468f8,0x2946920,0x38)}
-SIGNATURES={0x1238fe0:'488bc4488958104889701855574156488da848ffffff4881eca00100000f2970',
+SIGNATURES={0x1bbf140:'40534883ec20488bd9e8c2fcffff488b4b504885c97438488b41304883c13080',
+            0x1238fe0:'488bc4488958104889701855574156488da848ffffff4881eca00100000f2970',
             0x1239a40:'40534883ec20488bd9488b89581200004883e980488d93500d0000488b01ff50',
             0x1180270:'40534881ec30010000488bd94883c120e8fbe302ff89831804000083bb740300',
             0xb0cc50:'40534881ec40040000488b813005000033d24533c9498bd8448b4120488b4908',
@@ -29,6 +33,10 @@ def read_native_popup(reader,gui):
  adjust,main_vt,tooltip_vt,container_offset=OWNER_LAYOUTS[kind];owner=parent-adjust
  if pointer(owner)!=r.base+main_vt or pointer(parent)!=r.base+tooltip_vt:raise RuntimeError('Native popup owner vtable mismatch')
  if pointer(owner+container_offset)+48!=gui:return {'status':'nested_panel','native_type':kind}
+ if kind in NOTIFICATION_OWNERS:
+  signature(0x1bbf140);verify()
+  return {'status':'native_notification','notification_native_type':kind,'runtime_binding_verified':True,
+          'binding':'NNotification.notification_entry','physical_visibility_verified':False,'atomic_game_frame':False}
  if kind=='.?AVCEventWindow@@':
   signature(0x1238fe0);signature(0x1239a40);signature(0x1180270)
   event=pointer(owner+0x68)

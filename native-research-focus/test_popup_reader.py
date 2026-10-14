@@ -51,6 +51,13 @@ class PopupTests(unittest.TestCase):
   sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[row]}
   with patch('popup_reader.capture_live_ui',return_value=sample):d=capture_popups('session','game','world_tension')
   self.assertEqual(d['samples'][0]['windows'],[])
+ def test_notification_entries_keep_separate_title_and_message(self):
+  a=self.root(node('at','title','Idea expired'),node('am','message','First message'));a['source']='interface/notifications/notification.gui';a['native_popup']={'status':'native_notification'}
+  b=self.root(node('bt','title','War declared'),node('bm','message','Second message'));b['widget_id']='b';b['source']=a['source'];b['native_popup']={'status':'native_notification'}
+  center=self.root(a,b);center['source']=a['source']
+  sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[center,a,b]}
+  with patch('popup_reader.capture_live_ui',return_value=sample):d=capture_popups('session','game','notification_popups')
+  self.assertEqual([(w['title'],w['description']) for w in d['samples'][0]['windows']],[('Idea expired','First message'),('War declared','Second message')])
  def test_changed_registry_retries_a_read_only_sample(self):
   sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[]}
   with patch('popup_reader.capture_live_ui',side_effect=[GuiSnapshotChanged('changed'),sample]) as read:

@@ -1,6 +1,6 @@
 import struct,unittest
 from runtime_gui import NativeGuiReader,SUPPORTED_HASH,GuiSnapshotChanged
-from native_popup import read_native_popup,SIGNATURES
+from native_popup import read_native_popup,SIGNATURES,NOTIFICATION_OWNERS
 from test_runtime_gui import FakeProcess
 
 class NativePopupTests(unittest.TestCase):
@@ -51,6 +51,13 @@ class NativePopupTests(unittest.TestCase):
   self.r.types[self.p.base+0x2a13478]='.?AVCWorldTensionPopUpWindow@@'
   d=read_native_popup(self.r,self.gui);self.assertEqual(d['status'],'native_window_state');self.assertTrue(d['engine_local_shown']);self.assertFalse(d['physical_visibility_verified'])
   self.ptr(self.owner+0x570,0x40000000);self.assertEqual(read_native_popup(self.r,self.gui)['status'],'nested_panel')
+ def test_notification_owners_bind_their_own_entry(self):
+  for kind,(adjust,main,secondary,offset) in NOTIFICATION_OWNERS.items():
+   with self.subTest(kind=kind):
+    header=bytearray(160);struct.pack_into('<Q',header,80,self.owner+adjust);self.p.put(self.gui,header)
+    self.ptr(self.owner,self.p.base+main);self.ptr(self.owner+adjust,self.p.base+secondary);self.ptr(self.owner+offset,self.gui-48);self.r.types[self.p.base+secondary]=kind
+    d=read_native_popup(self.r,self.gui);self.assertEqual(d['status'],'native_notification');self.assertEqual(d['notification_native_type'],kind)
+    self.ptr(self.owner+offset,0x30000000);self.assertEqual(read_native_popup(self.r,self.gui)['status'],'nested_panel')
  def test_native_id_is_bound_without_text_matching(self):
   self.event_binding();d=read_native_popup(self.r,self.gui);self.assertEqual(d['event_id'],'fixture.1');self.assertTrue(d['event_id_verified'])
  def test_nested_panel_does_not_get_owner_root_identity(self):

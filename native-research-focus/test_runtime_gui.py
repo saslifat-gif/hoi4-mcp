@@ -720,58 +720,71 @@ class RuntimeGuiTests(unittest.TestCase):
         self.assertIsNone(runs[4]['color_code'])
         self.assertEqual(runs[-1]['name'],'steel')
     def test_incomplete_formatting_is_explicit_and_preserved(self):
-        self.assertEqual(native_markup('abc\x13unclosed')[-1],{'kind':'incomplete_icon','raw':'\x13unclosed'})
+        self.assertEqual(native_markup('abc\x13unclosed')[-1],{'kind':'icon','name':'unclosed','color_code':None})
         self.assertEqual(native_markup('abc\x11')[-1],{'kind':'incomplete_control','raw':'\x11'})
     def test_unpaired_live_icon_markers_do_not_swallow_map_tooltip_text(self):
         text='\x13location_pointer  \x11Y克拉科夫\x11!\n拥有国家：\x11Y\x12POL 波兰\x11!\n当地时间：\x13daynight|1 \x11H13:00\x11!\n胜利点：\x13victory_points \x11G5\x11!'
         runs=native_markup(text)
-        self.assertFalse(any(r['kind']=='icon' for r in runs))
-        self.assertEqual([r['codepoint'] for r in runs if r['kind']=='unknown_control'],['U+0013','U+0012','U+0013','U+0013'])
+        self.assertEqual([r['name'] for r in runs if r['kind']=='icon'],['location_pointer','daynight|1','victory_points'])
+        self.assertEqual(next(r['tag'] for r in runs if r['kind']=='flag'),'POL')
         readable=''.join(r['text'] for r in runs if r['kind']=='text')
-        for label in ('克拉科夫','POL 波兰','13:00','胜利点','5'):
+        for label in ('克拉科夫','波兰','13:00','胜利点','5'):
             self.assertIn(label,readable)
     def test_unpaired_icon_keeps_later_complete_icon_and_colors(self):
         runs=native_markup('\x13location_pointer  \x11Gshown\x11! \x13steel\x13')
-        self.assertEqual(runs[0]['reason'],'unpaired_icon_marker')
+        self.assertEqual(runs[0]['name'],'location_pointer')
         self.assertEqual(next(r for r in runs if r.get('text')=='shown')['color_code'],'G')
         self.assertEqual(runs[-1],{'kind':'icon','name':'steel','color_code':None})
     def test_icon_pair_cannot_cross_a_color_or_unknown_control(self):
         runs=native_markup('\x13left\x11G5\x11!\x12GER \x13right\x13')
-        self.assertEqual([r['name'] for r in runs if r['kind']=='icon'],['right'])
-        self.assertTrue(any(r.get('codepoint')=='U+0012' for r in runs))
+        self.assertEqual([r['name'] for r in runs if r['kind']=='icon'],['left','right'])
+        self.assertEqual(next(r['tag'] for r in runs if r['kind']=='flag'),'GER')
         self.assertEqual(next(r for r in runs if r.get('text')=='5')['color_code'],'G')
-    def test_plain_native_does_not_pair_icons_across_whitespace(self):
+    def test_plain_native_reads_unpaired_icons_across_whitespace(self):
         from runtime_gui import plain_native
         text='\x13location_pointer  \x11Y克拉科夫\x11!\n\x13daynight|1 \x11H13:00\x11!'
         plain=plain_native(text)
-        self.assertNotIn('[icon:',plain)
+        self.assertIn('[icon:location_pointer]',plain);self.assertIn('[icon:daynight|1]',plain)
         self.assertIn('克拉科夫',plain);self.assertIn('13:00',plain)
-        self.assertEqual(plain.count('\x13'),2)
-    def test_plain_native_does_not_pair_icons_after_stripping_colors(self):
+        self.assertEqual(plain.count('[icon:'),2)
+    def test_plain_native_reads_icons_before_color_controls(self):
         from runtime_gui import plain_native
-        self.assertEqual(plain_native('\x13left\x11G5\x11!\x13right\x13'),'\x13left5[icon:right]')
+        self.assertEqual(plain_native('\x13left\x11G5\x11!\x13right\x13'),'[icon:left]5[icon:right]')
     def test_adjacent_complete_icons_still_parse_separately(self):
         from runtime_gui import plain_native
         text='\x13steel\x13\x13oil|1\x13'
         self.assertEqual([r['name'] for r in native_markup(text)],['steel','oil|1'])
         self.assertEqual(plain_native(text),'[icon:steel][icon:oil|1]')
-    def test_live_country_marker_remains_explicitly_unresolved(self):
+    def test_native_flag_token_consumes_exactly_three_characters(self):
+        from runtime_gui import plain_native
         runs=native_markup('\x12GER 德国')
-        self.assertEqual(runs[0],{'kind':'unknown_control','raw':'\x12',
-                         'codepoint':'U+0012','meaning_verified':False,'color_code':None})
-        self.assertEqual(runs[1],{'kind':'text','text':'GER 德国','color_code':None})
-        self.assertEqual(''.join(r.get('raw',r.get('text','')) for r in runs),'\x12GER 德国')
+        self.assertEqual(runs[0]['kind'],'flag');self.assertEqual(runs[0]['tag'],'GER');self.assertFalse(runs[0]['asset_identity_verified'])
+        self.assertEqual(plain_native('\x12GER 德国'),'[flag:GER] 德国')
     def test_unknown_controls_preserve_color_and_normal_whitespace(self):
-        runs=native_markup('\x11G前\x12GER\t后\r\n\x11!')
+        runs=native_markup('\x11G前\x1b\t后\r\n\x11!')
         unknown=next(r for r in runs if r['kind']=='unknown_control')
         self.assertEqual(unknown['color_code'],'G');self.assertFalse(unknown['meaning_verified'])
-        self.assertEqual(runs[-2]['text'],'GER\t后\r\n')
+        self.assertEqual(runs[-2]['text'],'\t后\r\n')
         self.assertEqual(runs[-1]['kind'],'color_reset')
     def test_multiple_unknown_controls_are_lossless_and_do_not_consume_text(self):
         text='a\x00b\x1bc\x12d';runs=native_markup(text)
-        self.assertEqual([r['codepoint'] for r in runs if r['kind']=='unknown_control'],['U+0000','U+001B','U+0012'])
+        self.assertEqual([r['codepoint'] for r in runs if r['kind']=='unknown_control'],['U+0000','U+001B'])
         self.assertEqual(''.join(r.get('raw',r.get('text','')) for r in runs),text)
 
+    def test_native_nested_color_reset_restores_previous_selector(self):
+        runs=native_markup('\x11Rred \x11Ggreen\x11! red\x11! plain')
+        self.assertEqual([(r['text'],r['color_code']) for r in runs if r['kind']=='text'],[('red ','R'),('green','G'),(' red','R'),(' plain',None)])
+    def test_native_icon_token_bounds_and_fixed_atlas_tokens(self):
+        from runtime_gui import plain_native
+        runs=native_markup('\x13steel.dot \x14 \x1a07 end')
+        self.assertEqual(runs[0]['name'],'steel');self.assertEqual(runs[1]['text'],'.dot ')
+        self.assertEqual([(r['atlas_index'],r['frame']) for r in runs if r['kind']=='atlas_icon'],[(0,0),(3,7)])
+        self.assertEqual(plain_native('\x14\x1a07'),'[atlas:0:0][atlas:3:7]')
+        self.assertEqual(len(native_markup('\x13'+'a'*130)[0]['name']),128)
+    def test_malformed_flag_and_atlas_payloads_remain_explicit(self):
+        self.assertEqual(native_markup('\x12G')[-1],{'kind':'incomplete_flag','raw':'\x12G'})
+        self.assertEqual(native_markup('\x1aX')[-1],{'kind':'incomplete_control','raw':'\x1aX'})
+        self.assertEqual(native_markup('\x13 ')[0]['reason'],'empty_icon_token')
     def test_buffer_last_update_is_not_fabricated_from_capture_time(self):
         record=self.reader.snapshot()['matches'][0]
         self.assertIsNone(record['buffer_last_update_unix'])

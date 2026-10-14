@@ -1,6 +1,6 @@
 """Read engine-shown event and generic popup containers; never infer screen visibility."""
 from runtime_gui import capture_live_ui,GuiSnapshotChanged
-SURFACES={'events':'interface/eventwindow.gui','popups':'interface/popupwindow.gui','notifications':'interface/alerts.gui','world_tension':'interface/worldtensionwindowpopup.gui'}
+SURFACES={'events':'interface/eventwindow.gui','popups':'interface/popupwindow.gui','notifications':'interface/alerts.gui','world_tension':'interface/worldtensionwindowpopup.gui','notification_popups':'interface/notifications/'}
 EDGES=('container_children','fixed_window_children','grid_children','listbox_children','dropdown_components')
 
 def summarize_window(root):
@@ -36,7 +36,7 @@ def summarize_window(root):
      elif edge=='grid_children':unresolved.append({'reason':child.get('status','unreadable_row'),'row_index':child.get('index')})
  visit(root)
  titles=[x['text'] for x in fields if x['name'] in (('window_name',) if root['source']==SURFACES['world_tension'] else ('Title','title'))]
- descriptions=[x['text'] for x in fields if x['name'] in ('Description','description')]
+ descriptions=[x['text'] for x in fields if x['name'] in (('message',) if root['source'].startswith(SURFACES['notification_popups']) else ('Description','description'))]
  labels=[x['text'] for x in fields if x['name']=='Name'] if root['source']==SURFACES['events'] else []
  native=root.get('native_popup',{})
  return {'native_popup':native,'title':titles[0] if len(titles)==1 else None,'description':descriptions[0] if len(descriptions)==1 else None,
@@ -59,7 +59,7 @@ def window_roots(records):
  return [record for record in records if record['widget_id'] not in nested]
 
 def capture_popups(session_file,game_root,kind='all',include_script_references=False,language='en'):
- if kind not in ('all',*SURFACES):raise ValueError('kind must be all, events, popups, notifications or world_tension')
+ if kind not in ('all',*SURFACES):raise ValueError('kind must be all, events, popups, notifications or world_tension or notification_popups')
  refs=None
  if include_script_references:
   from popup_references import load_references,enrich_window
@@ -74,7 +74,8 @@ def capture_popups(session_file,game_root,kind='all',include_script_references=F
     break
    except GuiSnapshotChanged:
     if attempt==2:raise
-  windows=[summarize_window(x) for x in window_roots(sample['matches'])
+  roots=[x for x in sample['matches'] if x.get('native_popup',{}).get('status')=='native_notification'] if category=='notification_popups' else window_roots(sample['matches'])
+  windows=[summarize_window(x) for x in roots
            if category!='world_tension' or x['name']=='world_tension_popup']
   if refs is not None:
    for window in windows:enrich_window(window,refs)
