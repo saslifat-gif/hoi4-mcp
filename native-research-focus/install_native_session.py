@@ -2,7 +2,7 @@
 import argparse,hashlib,json,shutil
 from pathlib import Path
 from attach_native_probe import attach
-MODULES={'hoi4-native-probe.dll':'f40e2ad64c93e761942fa9d7d686e0e2eb2131f27bae3df8e37d71d4d6437928','hoi4-native-selection.dll':'dffc6a1fee8c4bfcf3ea477db60adbf171636ba75b3c84e82d60a55b348c85b6'}
+MODULES={'hoi4-native-probe.dll':'dad934b71750c9e4562e77b17dfaf82dfeb3947544193b72c76573f3dd6a9b21','hoi4-native-selection.dll':'ea4c632ab61bfe03315b952a9d5ee28b9c7c45b1d48b2428e0c9a0646a096cc0'}
 def install(session_file):
  sf=Path(session_file).resolve();dest=sf.parent/'native';dest.mkdir(exist_ok=True)
  if any((dest/n).exists() for n in MODULES):raise RuntimeError('Existing installation is not automatically retried or replaced')

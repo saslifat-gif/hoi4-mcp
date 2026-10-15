@@ -1,7 +1,7 @@
 """Idempotent semantic time requests to the paused-safe native frame callback."""
 import json,re,hashlib,ctypes,time
 from direct_controller import atomic_text
-DLL_SHA='c1db6bf4b4337d6b9fadd1f7428ce33d9af5248fa64fc7994f12f2ad17e1ba60'
+DLL_SHA='7fe17d984f068fbd31abbfda511e5798c363c824eb663f3b0a41554c14c9e4e3'
 def read_native_json(path):
  # Windows can briefly deny opens while the native writer atomically replaces a file.
  # Retry reads only; commands and malformed observations are never retried here.
@@ -30,6 +30,10 @@ class TimeController:
   if not isinstance(rid,str) or not re.fullmatch('[a-f0-9]{32}',rid):raise ValueError('32-hex request ID required')
   self.status();d=self.load()
   if rid not in d['requests']:raise ValueError('Unknown time request')
+  failed=d.get('publication_failures',{}).get(rid)
+  if failed:
+   if (self.root/f'time-receipt-{rid}.json').exists():raise RuntimeError('Conflicting native and failed-publication receipts')
+   return {'session_id':d['session_id'],'request_id':rid,'stage':'rejected','reason':'request_publication_failed','receipt_source':'controller_atomic_publication','native_execution_attempted':False,**failed}
   p=self.root/f'time-receipt-{rid}.json'
   if not p.exists():return {'request_id':rid,'stage':'pending'}
   r=read_native_json(p)
@@ -49,7 +53,7 @@ class TimeController:
     result={**r,'stage':'window_observed','native_stage':r['stage'],'after_shown':d['requests'][rid]['value'],'observed_unix':sample['captured_end_unix'],'widget_id':windows[0]['widget_id'],'readback_binding':'CWorldTensionPopUpWindow.container','readback_process_writes':False,'uses_keyboard_or_mouse':False}
     atomic_text(observed,json.dumps(result,indent=2));return result
   return r
- def submit(self,rid,kind,value):
+ def submit(self,rid,kind,value,*,selector=None):
   if not isinstance(rid,str) or not re.fullmatch('[a-f0-9]{32}',rid):raise ValueError('32-hex request ID required')
   if kind in ('pause','worldtension'):
    if type(value)!=bool:raise ValueError('paused must be boolean')
@@ -59,8 +63,17 @@ class TimeController:
    if type(value)!=int or not 1<=value<=5:raise ValueError('Speed is an integer 1..5')
   elif kind=='alert':
    if type(value)!=int or not 0<=value<=81:raise ValueError('Native global-alert kind must be 0..81')
+  elif kind=='save':
+   if type(value)!=int or value!=0:raise ValueError('Owned save command requires zero value')
+  elif kind in ('tooltip','tooltipquery'):
+   if type(value)!=int or value!=0 or not isinstance(selector,dict) or set(selector)!={'source','name'}:raise ValueError('Exact tooltip source/name required')
+   for text in selector.values():
+    if not isinstance(text,str) or not 1<=len(text.encode('utf-8'))<=512 or any(ord(c)<32 or c=='|' for c in text):raise ValueError('Invalid tooltip selector')
   else:raise ValueError('Unsupported time command')
   command={'kind':kind,'value':value}
+  if selector is not None:
+   if kind not in ('tooltip','tooltipquery'):raise ValueError('Selector is only supported for tooltip generation')
+   command.update(selector)
   with self.native.transaction():
    self.status();d=self.load()
    if rid in d['requests']:
@@ -68,8 +81,13 @@ class TimeController:
     return self.receipt(rid,observe_window=kind=='worldtension')
    if not self.native.load()['armed']:raise RuntimeError('Native interface is disarmed')
    for old in d['requests']:
-    if self.receipt(old)['stage'] not in ('time_verified','alert_refreshed','window_verified','window_observed','rejected'):raise RuntimeError('Reconcile unresolved time command first')
+    if self.receipt(old)['stage'] not in ('time_verified','alert_refreshed','window_verified','window_observed','tooltip_generated','tooltip_result_generated','save_file_observed','rejected'):raise RuntimeError('Reconcile unresolved time command first')
    if len(d['requests'])>=64:raise RuntimeError('Time command limit reached')
    d['requests'][rid]=command;atomic_text(self.path,json.dumps(d,indent=2))
-   atomic_text(self.root/'time-request.txt',f"{d['session_id']}|{rid}|{kind}|{int(value)}")
+   try:
+    if kind in ('tooltip','tooltipquery'):atomic_text(self.root/f'tooltip-selector-{rid}.txt',f"{d['session_id']}|{rid}|{selector['source']}\n{selector['name']}")
+    atomic_text(self.root/'time-request.txt',f"{d['session_id']}|{rid}|{kind}|{int(value)}")
+   except PermissionError as error:
+    d.setdefault('publication_failures',{})[rid]={'winerror':getattr(error,'winerror',None)}
+    atomic_text(self.path,json.dumps(d,indent=2))
   return self.receipt(rid)

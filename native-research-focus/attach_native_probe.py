@@ -32,18 +32,24 @@ class MODULEENTRY32W(ctypes.Structure):
 class MEMORY_BASIC_INFORMATION(ctypes.Structure):
  _fields_=[('BaseAddress',ctypes.c_void_p),('AllocationBase',ctypes.c_void_p),('AllocationProtect',W.DWORD),('PartitionId',W.WORD),('RegionSize',ctypes.c_size_t),('State',W.DWORD),('Protect',W.DWORD),('Type',W.DWORD)]
 
+def bind_native_files(directory,sid,country):
+ bindings={'session-id.txt':sid,'country-code.txt':country}
+ for name,value in bindings.items():
+  path=directory/name
+  if path.exists() and path.read_text()!=value:raise RuntimeError('Different native binding was not overwritten')
+ for name,value in bindings.items():
+  path=directory/name
+  if not path.exists():path.write_text(value,encoding='ascii')
+
 def attach(session_file,dll_file,expected_sha):
  if os.name!='nt':raise RuntimeError('Native attachment requires Windows')
  c=json.loads(Path(session_file).read_text());verify_sources(c)
- if c['country']!='GER' or c['mode']!='singleplayer_test' or not c.get('process_identity'):raise ValueError('Freshly bound GER test session required')
+ if c['country'] not in ('GER','ITA') or c['mode']!='singleplayer_test' or not c.get('process_identity'):raise ValueError('Freshly bound supported-country test session required')
  pid=c['process_identity']['pid']
  if process_identity(pid)!=c['process_identity']:raise RuntimeError('Bound game process changed before attachment')
  dll=Path(dll_file).resolve()
  if hashlib.sha256(dll.read_bytes()).hexdigest()!=expected_sha:raise RuntimeError('Pinned native module changed; no attachment attempted')
- sid_path=dll.parent/'session-id.txt'
- if sid_path.exists():
-  if sid_path.read_text()!=c['session_id']:raise RuntimeError('Different native binding was not overwritten')
- else:sid_path.write_text(c['session_id'],encoding='ascii')
+ bind_native_files(dll.parent,c['session_id'],c['country'])
  k=ctypes.WinDLL('kernel32',use_last_error=True)
  def fn(name,args,result):
   f=getattr(k,name);f.argtypes=args;f.restype=result;return f
@@ -64,11 +70,11 @@ def attach(session_file,dll_file,expected_sha):
  mods=modules()
  if dll.name.lower()=='hoi4-native-selection.dll':
   predecessor=mods.get('hoi4-native-probe.dll')
-  if not predecessor or Path(predecessor['path']).resolve()!=dll.parent/'hoi4-native-probe.dll' or hashlib.sha256(Path(predecessor['path']).read_bytes()).hexdigest()!='f40e2ad64c93e761942fa9d7d686e0e2eb2131f27bae3df8e37d71d4d6437928':
+  if not predecessor or Path(predecessor['path']).resolve()!=dll.parent/'hoi4-native-probe.dll' or hashlib.sha256(Path(predecessor['path']).read_bytes()).hexdigest()!='dad934b71750c9e4562e77b17dfaf82dfeb3947544193b72c76573f3dd6a9b21':
    raise RuntimeError('Verified session observation predecessor required')
  if dll.name.lower()=='hoi4-native-choices.dll':
   predecessor=mods.get('hoi4-native-selection.dll')
-  if not predecessor or Path(predecessor['path']).resolve()!=dll.parent/'hoi4-native-selection.dll' or hashlib.sha256(Path(predecessor['path']).read_bytes()).hexdigest()!='dffc6a1fee8c4bfcf3ea477db60adbf171636ba75b3c84e82d60a55b348c85b6':
+  if not predecessor or Path(predecessor['path']).resolve()!=dll.parent/'hoi4-native-selection.dll' or hashlib.sha256(Path(predecessor['path']).read_bytes()).hexdigest()!='ea4c632ab61bfe03315b952a9d5ee28b9c7c45b1d48b2428e0c9a0646a096cc0':
    raise RuntimeError('Verified session selection predecessor required')
  if dll.name.lower() in mods:raise RuntimeError('Probe already loaded; binding was not reset')
  gm=fn('GetModuleHandleW',[W.LPCWSTR],W.HMODULE)

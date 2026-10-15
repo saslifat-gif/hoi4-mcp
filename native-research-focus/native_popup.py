@@ -1,14 +1,19 @@
 """Build-pinned event identity and global-alert cache reads; no native invocation."""
 import struct
 from runtime_gui import GuiSnapshotChanged,native_markup
+from native_handle import HANDLE_SIGNATURES,resolve_native_handle
 
 NOTIFICATION_OWNERS={'.?AVCExternallyCompletedFocusNotification@NNotification@@':(40,0x29b4378,0x29b43c8,0x50),
                      '.?AVCIdeaExpiredNotification@NNotification@@':(40,0x2a1bcb0,0x2a1bd00,0x50),
                      '.?AVCLegacyMessagePopUpNotification@NNotification@@':(40,0x2a02ea0,0x2a02ef0,0x50)}
 OWNER_LAYOUTS={**NOTIFICATION_OWNERS,'.?AVCWorldTensionPopUpWindow@@':(56,0x2a133d8,0x2a13478,0x570),
                '.?AVCEventWindow@@':(56,0x29a4818,0x29a4878,0x50),
-               '.?AVCGlobalAlertIcon@@':(40,0x29468f8,0x2946920,0x38)}
-SIGNATURES={0x1bbf140:'40534883ec20488bd9e8c2fcffff488b4b504885c97438488b41304883c13080',
+               '.?AVCGlobalAlertIcon@@':(40,0x29468f8,0x2946920,0x38),
+               '.?AVCRegionAlertEntry@@':(72,0x2a86ec8,0x2a87000,0x40),
+               '.?AVCTheaterGroupAlertEntry@@':(72,0x2a86988,0x2a86ac0,0x40)}
+SIGNATURES={**HANDLE_SIGNATURES,
+            0x1e6acf0:'48895c2410574881ec40040000488bd9498bf84881c114050000833900750a83',0x22a9260:'48895c2410488974241848894c2408574883ec30498bd8488bf2488bf9e83e430400',
+            0x1e6aac0:'40534881ec400400004c8b8918050000488d54243033c0498bd8448b8110050000',0x1bbf140:'40534883ec20488bd9e8c2fcffff488b4b504885c97438488b41304883c13080',
             0x1238fe0:'488bc4488958104889701855574156488da848ffffff4881eca00100000f2970',
             0x1239a40:'40534883ec20488bd9488b89581200004883e980488d93500d0000488b01ff50',
             0x1180270:'40534881ec30010000488bd94883c120e8fbe302ff89831804000083bb740300',
@@ -66,18 +71,37 @@ def read_native_popup(reader,gui):
  if kind=='.?AVCWorldTensionPopUpWindow@@':
   verify();return {'status':'native_window_state','window':'world_tension','engine_local_shown':bool(header[117]&8),
                    'runtime_binding_verified':True,'physical_visibility_verified':False,'atomic_game_frame':False}
- signature(0xb0cc50);signature(0xb0ab70)
- manager=pointer(owner+0x30);alert=struct.unpack('<I',read(owner+0x48,4))[0];context=pointer(owner+0x558)
- if alert>81:return {'status':'unsupported_alert_kind','native_alert_kind':alert}
+ scope='region' if kind=='.?AVCRegionAlertEntry@@' else 'theater' if kind=='.?AVCTheaterGroupAlertEntry@@' else 'global'
+ signature({'region':0x1e6aac0,'theater':0x1e6acf0,'global':0xb0cc50}[scope]);signature(0xb0ab70)
+ if scope!='global':
+  signature(0x22a9260)
+  manager=pointer(pointer(r.base+0x332f6a0)+0x798);alert=struct.unpack('<I',read(owner+0x558,4))[0]
+  if scope=='region':
+   context=pointer(owner+0x560)
+   if context and (pointer(context)!=r.base+0x296d558 or r.typename(context)!='.?AVCStrategicRegion@@'):raise RuntimeError('Native region context type mismatch')
+  else:
+   signature(0x221f310);signature(0x221d320)
+   first,second=struct.unpack('<2I',read(owner+0x55c,8))
+   context=resolve_native_handle(r.base,read,first,second)
+   if context and (pointer(context)!=r.base+0x29e5c50 or r.typename(context)!='.?AVCTheaterGroup@@'):raise RuntimeError('Native theater context type mismatch')
+  expected_key=(context,0,0) if scope=='region' else (0,context,0)
+  if not context:
+   verify();return {'status':'no_'+scope+'_context','native_alert_kind':alert}
+ else:
+  manager=pointer(owner+0x30);alert=struct.unpack('<I',read(owner+0x48,4))[0];context=pointer(owner+0x558);expected_key=(0,0,context)
+ identity={'native_owner_id':hex(owner),'native_provider_id':hex(parent),'native_context_id':hex(context),'native_alert_kind':alert,'alert_scope':scope}
+ if scope=='theater':identity['native_context_handle']=[first,second]
+ if alert>81:return {'status':'unsupported_alert_kind',**identity}
  # The native tooltip lookup uses this vector, stride and three-part context key.
  table=manager+24*(alert+0xf0e);array,capacity,count=struct.unpack('<QII',read(table,16))
  if count>capacity or capacity>1000:raise RuntimeError('Native alert cache extent invalid')
  matches=[]
  for i in range(count):
   entry=array+i*0x468;key=struct.unpack('<4Q',read(entry+0x438,32))
-  if key[0]==0 and key[1]==0 and key[3]==context:matches.append(entry)
+  if (key[0],key[1],key[3])==expected_key:matches.append(entry)
  if len(matches)!=1:
-  verify();return {'status':'cache_missing' if not matches else 'cache_ambiguous','native_alert_kind':alert}
+  verify();return {'status':'cache_missing' if not matches else 'cache_ambiguous',**identity}
+ active=read(matches[0],1)[0]==0
  fields={}
  for label,offset in (('title',8),('body',40)):
   address=matches[0]+offset;read(address,32);value=r._string(address)
@@ -88,6 +112,6 @@ def read_native_popup(reader,gui):
   final=r._string(matches[0]+offset)
   if final.get('raw_text')!=fields[label]['raw_text'] or final['status']!='read':raise GuiSnapshotChanged('Native alert cache text changed during read')
  verify()
- return {'status':'native_cached_text','native_alert_kind':alert,'fields':fields,
-         'runtime_binding_verified':True,'buffer_freshness_verified':False,
+ return {'status':'native_cached_text',**identity,'fields':fields,'native_cache_record_active':active,
+         'alert_scope':scope,'runtime_binding_verified':True,'buffer_freshness_verified':False,
          'buffer_last_update_unix':None,'complete_message_coverage':False,'atomic_game_frame':False}

@@ -6,6 +6,15 @@ This repository contains a generated-mod bridge, an external Python service and
 source-built native Windows modules. It is not a standalone Steam Workshop mod
 or a complete autonomous HOI4 player.
 
+## Development snapshot — 15 October 2026
+
+Today’s integrated source adds native laws, advisors, decisions, trade, military
+orders/deployment/theaters/combat, owned saves/reloads and tooltip asset readers.
+Representative protected Windows cases passed live MCP checks. This remains an
+experimental controller, not a complete autonomous player. See the exact
+[verified cases and unfinished work](PROGRESS_20261015.md). The existing v0.1.0
+release ZIP remains the earlier peacetime MVP; this source snapshot is newer.
+
 ## Run the MVP
 
 The MVP is a bounded Germany research/focus AI with structured observations and
@@ -45,11 +54,13 @@ A five-minute sustained research/focus run also passed, including three research
 completion/refill cycles. See [runner validation](native-research-focus/SUSTAINED_PEACETIME.md).
 Offline tests do not prove compatibility with another game version or a full campaign.
 
-Only Windows, an owned Germany single-player test campaign and executable SHA256
+Only Windows, owned Germany/Italy single-player test campaigns and executable SHA256
 `7dc947be34970da1e1c787bcddbe7f62b610ff258aebf8f06aa8b348f3a031d5`
 are supported. Other versions are rejected; changing that hash alone does not port
-native addresses or command layouts. Military orders, diplomacy, event choices,
-laws/advisors/trade and save/load continuation are not implemented.
+native addresses or command layouts. The bounded research/focus AI and owned-save
+reload helper remain Germany-specific. Military commands and representative law,
+advisor, decision and trade actions now have live coverage; diplomacy, event-choice
+execution and a full autonomous campaign remain unfinished.
 
 ## Install Python dependencies
 
@@ -68,9 +79,9 @@ localization, saves, decompiler output or private runtime credentials are includ
 Native attachment loads these modules into the owned game process and hooks
 verified native callbacks; it uses process-memory writes, but no input simulation
 or direct setters for country/research/focus gameplay fields.
-Use normal Python for the protected campaign workflow: some preparation and
-recovery helpers still use assertions. The native loader now uses explicit errors
-for its process, module, PE image and initialization checks. Use only a disposable
+The current queued-capacity recovery helper uses explicit ownership and backup
+checks under normal and optimized Python. The native loader also uses explicit
+process, module, PE image and initialization checks. Use only a disposable
 campaign and preserve your saves first.
 
 ## Prepare a protected campaign
@@ -107,7 +118,9 @@ not an automatic all-in-one launcher.
 ## Request and recovery contract
 
 Use a unique 32-character lowercase hex request ID for each intended action.
-Repeat the same ID after a timeout or uncertain receipt; do not invent a new ID.
+After a timeout, reconcile the existing ID and read back state. Never execute an
+uncertain action again or replace it with a new ID. Completed duplicate requests
+return the retained receipt without repeating the native action.
 A queued request is not proof of an executed action. A scripted ACK is not proof
 of construction insertion or production output. Inspect the relevant state.
 Ledger operations lock and reload shared state to preserve request IDs and receipts
@@ -144,7 +157,7 @@ See `native-research-focus/SUSTAINED_PEACETIME.md` for the bounded research/focu
 
 这是实验性的 HOI4 游戏侧 MCP 接口，通过结构化命令与状态读取工作，不使用键盘鼠标。
 项目包含模组生成器、外部 Python 服务及原生 Windows 模块，不能作为普通创意工坊模组单独运行。
-目前支持指定版本的德国单人临时测试战役；多级建设与有限研究/国策 AI 已通过真实游戏验证。
+目前支持指定版本的德国/意大利单人临时测试战役；新增军事、法律、顾问、决议、贸易和存读档接口的代表性操作已通过真实游戏验证。
 安装 Python 依赖后运行 Start-Mvp.ps1，即可启动临时战役、运行有限 AI、关闭游戏并恢复原配置。
-此 MVP 不包含战争 AI，也不支持读档后继续运行。
+旧版 v0.1.0 MVP 不包含战争 AI；当前源码已验证德国专用的受保护存读档恢复，完整自主战役仍未完成。
 请先备份存档，明确区分离线测试、游戏日志回执和真实游戏状态验证。

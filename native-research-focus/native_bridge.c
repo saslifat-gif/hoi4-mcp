@@ -29,6 +29,7 @@ static int hex_id(const char *s){
  return 1;
 }
 static void path(wchar_t *out,const wchar_t *name){swprintf(out,MAX_PATH,L"%ls\\%ls",root,name);}
+#include "native_country.h"
 static int write_atomic(const wchar_t *name,const char *data){
  wchar_t dest[MAX_PATH],tmp[MAX_PATH];path(dest,name);swprintf(tmp,MAX_PATH,L"%ls.pending",dest);
  HANDLE f=CreateFileW(tmp,GENERIC_WRITE,FILE_SHARE_READ,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
@@ -76,8 +77,8 @@ static void observe(void *scope){
  if(slots<1||slots>16||models<1||models>10000)return;
  DWORD tid=GetCurrentThreadId();if(script_thread&&script_thread!=tid)return;script_thread=tid;
  char out[2048];snprintf(out,sizeof out,
-  "{\"stage\":\"script_thread_observed\",\"session_id\":\"%s\",\"pid\":%lu,\"thread_id\":%lu,\"country_tag\":%u,\"country\":\"0x%llx\",\"world\":\"0x%llx\",\"technology_status\":\"0x%llx\",\"research_slots\":%d,\"technology_models\":%d,\"focus_tree\":\"0x%llx\",\"focus_progress\":\"0x%llx\",\"active_focus\":\"0x%llx\",\"focus_elapsed_raw\":%lld,\"uses_keyboard_or_mouse\":false,\"selection_commands_enabled\":false}",
-  sid,(unsigned long)GetCurrentProcessId(),(unsigned long)tid,*tag,(unsigned long long)country,(unsigned long long)world,(unsigned long long)tech,slots,models,(unsigned long long)tree,(unsigned long long)progress,(unsigned long long)*(uintptr_t*)(progress+0x10),(long long)*(int64_t*)(progress+0x18));
+  "{\"stage\":\"script_thread_observed\",\"country_code\":\"%s\",\"session_id\":\"%s\",\"pid\":%lu,\"thread_id\":%lu,\"country_tag\":%u,\"country\":\"0x%llx\",\"world\":\"0x%llx\",\"technology_status\":\"0x%llx\",\"research_slots\":%d,\"technology_models\":%d,\"focus_tree\":\"0x%llx\",\"focus_progress\":\"0x%llx\",\"active_focus\":\"0x%llx\",\"focus_elapsed_raw\":%lld,\"uses_keyboard_or_mouse\":false,\"selection_commands_enabled\":false}",
+  country_code,sid,(unsigned long)GetCurrentProcessId(),(unsigned long)tid,*tag,(unsigned long long)country,(unsigned long long)world,(unsigned long long)tech,slots,models,(unsigned long long)tree,(unsigned long long)progress,(unsigned long long)*(uintptr_t*)(progress+0x10),(long long)*(int64_t*)(progress+0x18));
  /* Only the selection module owns the command-enabled handshake. */
  write_atomic(L"native-probe-observation.json",out);
 }
@@ -86,7 +87,7 @@ static void log_hook(void *effect,void *scope){
  if(initialized!=1)return;
  __try{
   char text[512],prefix[128];
-  snprintf(prefix,sizeof prefix,"CODEX_COMMAND_SESSION|%s|LIVE|country=GER",sid);
+  snprintf(prefix,sizeof prefix,"CODEX_COMMAND_SESSION|%s|LIVE|country=%s",sid,country_code);
   if(literal(effect,text,sizeof text)&&strcmp(text,prefix)==0)observe(scope);
  }__except(EXCEPTION_EXECUTE_HANDLER){
   initialized=2;
@@ -101,6 +102,7 @@ __declspec(dllexport) DWORD WINAPI Initialize(LPVOID unused){
  if(f==INVALID_HANDLE_VALUE)return 13;
  DWORD got=0;BOOL ok=ReadFile(f,sid,33,&got,NULL);CloseHandle(f);
  if(!ok||got!=32)return 14;sid[32]=0;if(!hex_id(sid))return 15;
+ if(!load_country_code())return 20;
  if(!module_hash_matches())return 16;
  image=(uintptr_t)GetModuleHandleW(NULL);
  void **slot=(void**)(image+0x29b73d8+13*8);

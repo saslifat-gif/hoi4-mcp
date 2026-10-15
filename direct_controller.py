@@ -7,6 +7,7 @@ import secrets
 import math
 import functools
 import threading
+import time
 from command_catalog import equipment_guard, construction_state_guard
 
 FUNCTION = 'codex_mcp_commands_'
@@ -29,7 +30,13 @@ def atomic_text(path,text):
     try:
         with tmp.open('w',encoding='utf-8',newline='\n') as f:
             f.write(text);f.flush();os.fsync(f.fileno())
-        os.replace(tmp,path)
+        for attempt in range(6):
+            try:
+                os.replace(tmp,path)
+                break
+            except PermissionError as error:
+                if getattr(error,'winerror',None) not in (5,32) or attempt==5:raise
+                time.sleep(.02)
     finally:
         if tmp.exists():tmp.unlink()
 

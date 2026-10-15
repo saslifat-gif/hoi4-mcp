@@ -13,3 +13,10 @@ lean-metrics/
 *token*
 .env*
 .DS_Store
+
+# Local engine analysis and campaign evidence
+*.exe
+*.partial
+rea-evidence/
+rea-local-evidence/
+artifacts/

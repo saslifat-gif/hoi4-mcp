@@ -18,6 +18,12 @@ class LoaderTests(unittest.TestCase):
  def test_changed_process_does_not_publish_binding(self):
   with self.assertRaisesRegex(RuntimeError,'process changed'):self.attach({'pid':123,'created':999},hashlib.sha256(b'fixture').hexdigest())
   self.assertFalse((self.root/'session-id.txt').exists())
+ def test_native_country_binding_is_immutable(self):
+  loader.bind_native_files(self.root,'a'*32,'ITA')
+  self.assertEqual((self.root/'country-code.txt').read_bytes(),b'ITA')
+  loader.bind_native_files(self.root,'a'*32,'ITA')
+  with self.assertRaisesRegex(RuntimeError,'not overwritten'):loader.bind_native_files(self.root,'a'*32,'GER')
+  self.assertEqual((self.root/'country-code.txt').read_bytes(),b'ITA')
  def test_changed_module_does_not_publish_binding(self):
   with self.assertRaisesRegex(RuntimeError,'Pinned native module changed'):self.attach(self.ident,'0'*64)
   self.assertFalse((self.root/'session-id.txt').exists())

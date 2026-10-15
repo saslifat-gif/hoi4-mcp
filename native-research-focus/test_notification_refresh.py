@@ -9,6 +9,50 @@ class NotificationRefreshTests(unittest.TestCase):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name);self.sid='a'*32;self.rid='b'*32
   native=SimpleNamespace(native=self.root,config={'session_id':self.sid,'game_root':'game'},path=self.root/'session.json',transaction=contextlib.nullcontext,load=lambda:{'armed':True})
   self.clock=TimeController(native);self.clock.status=lambda:{'paused':True}
+ def test_tooltip_selector_is_durable_and_precedes_header(self):
+  from direct_controller import atomic_text
+  selector={'source':'interface/topbar.gui','name':'political_power'};seen=[]
+  def record(path,text):
+   if path.name=='time-request.txt':
+    self.assertEqual(json.loads((self.root/'time-ledger.json').read_text())['requests'][self.rid],{'kind':'tooltip','value':0,**selector})
+    self.assertEqual((self.root/f'tooltip-selector-{self.rid}.txt').read_text(),self.sid+'|'+self.rid+'|interface/topbar.gui\npolitical_power')
+   seen.append(path.name);atomic_text(path,text)
+  with patch('time_controller.atomic_text',side_effect=record):self.clock.submit(self.rid,'tooltip',0,selector=selector)
+  self.assertLess(seen.index(f'tooltip-selector-{self.rid}.txt'),seen.index('time-request.txt'))
+  with self.assertRaisesRegex(ValueError,'payload mismatch'):self.clock.submit(self.rid,'tooltip',0,selector={**selector,'name':'command_power'})
+ def test_completed_empty_tooltip_is_not_replayed(self):
+  selector={'source':'interface/topbar.gui','name':'political_power'}
+  self.clock.submit(self.rid,'tooltip',0,selector=selector)
+  receipt={'session_id':self.sid,'request_id':self.rid,'stage':'tooltip_generated','nonempty':False}
+  (self.root/f'time-receipt-{self.rid}.json').write_text(json.dumps(receipt))
+  (self.root/'time-request.txt').unlink();(self.root/f'tooltip-selector-{self.rid}.txt').unlink()
+  self.assertEqual(self.clock.submit(self.rid,'tooltip',0,selector=selector),receipt)
+  self.assertFalse((self.root/f'tooltip-selector-{self.rid}.txt').exists())
+  self.assertEqual(self.clock.submit('c'*32,'pause',True)['stage'],'pending')
+ def test_tooltip_rejects_invalid_selector_before_ledger(self):
+  bad=[None,{}, {'source':'x','name':'a|b'},{'source':'x','name':'a\nb'},{'source':'x','name':'é'*257},{'source':'x','name':1},{'source':'','name':'x'}]
+  for selector in bad:
+   with self.assertRaises(ValueError):self.clock.submit(self.rid,'tooltip',0,selector=selector)
+  self.assertFalse((self.root/'time-ledger.json').exists())
+ def test_tooltip_sidecar_failure_never_publishes_or_replays(self):
+  from direct_controller import atomic_text
+  selector={'source':'interface/topbar.gui','name':'political_power'}
+  def fail(path,text):
+   if path.name.startswith('tooltip-selector-'):raise PermissionError('fixture')
+   atomic_text(path,text)
+  with patch('time_controller.atomic_text',side_effect=fail):result=self.clock.submit(self.rid,'tooltip',0,selector=selector)
+  self.assertEqual(result['reason'],'request_publication_failed');self.assertFalse((self.root/'time-request.txt').exists())
+  with patch('time_controller.atomic_text') as write:
+   self.assertEqual(self.clock.submit(self.rid,'tooltip',0,selector=selector),result);write.assert_not_called()
+ def test_explicit_tooltip_result_is_distinct_and_terminal(self):
+  selector={'source':'interface/topbar.gui','name':'pol_power'}
+  self.clock.submit(self.rid,'tooltipquery',0,selector=selector)
+  self.assertEqual((self.root/'time-request.txt').read_text(),self.sid+'|'+self.rid+'|tooltipquery|0')
+  with self.assertRaisesRegex(ValueError,'payload mismatch'):self.clock.submit(self.rid,'tooltip',0,selector=selector)
+  receipt={'session_id':self.sid,'request_id':self.rid,'stage':'tooltip_result_generated','nonempty':False}
+  (self.root/f'time-receipt-{self.rid}.json').write_text(json.dumps(receipt))
+  self.assertEqual(self.clock.submit(self.rid,'tooltipquery',0,selector=selector),receipt)
+  self.assertEqual(self.clock.submit('c'*32,'pause',True)['stage'],'pending')
  def test_refresh_uses_existing_durable_request_channel(self):
   self.assertEqual(self.clock.submit(self.rid,'alert',8)['stage'],'pending')
   self.assertEqual((self.root/'time-request.txt').read_text(),self.sid+'|'+self.rid+'|alert|8')

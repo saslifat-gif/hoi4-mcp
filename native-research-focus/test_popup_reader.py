@@ -58,6 +58,14 @@ class PopupTests(unittest.TestCase):
   sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[center,a,b]}
   with patch('popup_reader.capture_live_ui',return_value=sample):d=capture_popups('session','game','notification_popups')
   self.assertEqual([(w['title'],w['description']) for w in d['samples'][0]['windows']],[('Idea expired','First message'),('War declared','Second message')])
+ def test_regional_surface_keeps_only_bound_alert_roots(self):
+  region=self.root();region['owner_native_type']='.?AVCRegionAlertEntry@@';region['native_popup']={'status':'cache_missing'}
+  other=self.root();other['owner_native_type']='.?AVCTheatreSelector@@'
+  nested=self.root();nested['owner_native_type']='.?AVCRegionAlertEntry@@';nested['native_popup']={'status':'nested_panel'}
+  theater=self.root();theater['owner_native_type']='.?AVCTheaterGroupAlertEntry@@';theater['native_popup']={'status':'no_theater_context'}
+  sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[other,region,nested,theater]}
+  with patch('popup_reader.capture_live_ui',return_value=sample) as read:d=capture_popups('session','game','regional_notifications')
+  self.assertEqual(len(d['samples'][0]['windows']),2);self.assertEqual(d['samples'][0]['windows'][1]['native_popup']['status'],'no_theater_context');self.assertEqual(read.call_args.kwargs['source'],'interface/theatreselector.gui');self.assertEqual(d['samples'][0]['windows'][0]['native_popup']['status'],'cache_missing')
  def test_changed_registry_retries_a_read_only_sample(self):
   sample={'captured_start_unix':1,'captured_end_unix':2,'truncated':False,'matches':[]}
   with patch('popup_reader.capture_live_ui',side_effect=[GuiSnapshotChanged('changed'),sample]) as read:

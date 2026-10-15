@@ -1,6 +1,6 @@
 """Read engine-shown event and generic popup containers; never infer screen visibility."""
 from runtime_gui import capture_live_ui,GuiSnapshotChanged
-SURFACES={'events':'interface/eventwindow.gui','popups':'interface/popupwindow.gui','notifications':'interface/alerts.gui','world_tension':'interface/worldtensionwindowpopup.gui','notification_popups':'interface/notifications/'}
+SURFACES={'events':'interface/eventwindow.gui','popups':'interface/popupwindow.gui','notifications':'interface/alerts.gui','world_tension':'interface/worldtensionwindowpopup.gui','notification_popups':'interface/notifications/','regional_notifications':'interface/theatreselector.gui'}
 EDGES=('container_children','fixed_window_children','grid_children','listbox_children','dropdown_components')
 
 def summarize_window(root):
@@ -15,13 +15,13 @@ def summarize_window(root):
   if not state.get('engine_show_state_verified'):
    unresolved.append({'widget_id':key,'name':node.get('name'),'reason':'unknown_local_show_state'})
   elif node.get('text_status')=='read':
-   item={k:node.get(k) for k in ('widget_id','name','native_type','text','raw_text','formatted_runs')}
+   item={k:node.get(k) for k in ('widget_id','name','source','native_type','text','raw_text','formatted_runs')}
    fields.append(item)
    if node['native_type'] in ('.?AVCButtonStandard@@','.?AVCCallbackButtonStandard@@'):buttons.append(item)
   elif node.get('text_status') not in ('not_decoded_for_this_widget_type',None):
    unresolved.append({'widget_id':key,'name':node.get('name'),'reason':node['text_status']})
   if node.get('native_type')=='.?AVCIcon@@' and state.get('engine_show_state_verified'):
-   icons.append({k:node.get(k) for k in ('widget_id','name','icon_frame')})
+   icons.append({k:node.get(k) for k in ('widget_id','name','source','icon_frame')})
   for edge in EDGES:
    detail=node.get(edge,{})
    for group in ('children','rows'):
@@ -59,7 +59,7 @@ def window_roots(records):
  return [record for record in records if record['widget_id'] not in nested]
 
 def capture_popups(session_file,game_root,kind='all',include_script_references=False,language='en'):
- if kind not in ('all',*SURFACES):raise ValueError('kind must be all, events, popups, notifications or world_tension or notification_popups')
+ if kind not in ('all',*SURFACES):raise ValueError('kind must be all, events, popups, notifications or world_tension or notification_popups or regional_notifications')
  refs=None
  if include_script_references:
   from popup_references import load_references,enrich_window
@@ -75,6 +75,7 @@ def capture_popups(session_file,game_root,kind='all',include_script_references=F
    except GuiSnapshotChanged:
     if attempt==2:raise
   roots=[x for x in sample['matches'] if x.get('native_popup',{}).get('status')=='native_notification'] if category=='notification_popups' else window_roots(sample['matches'])
+  if category=='regional_notifications':roots=[x for x in sample['matches'] if x.get('owner_native_type')in ('.?AVCRegionAlertEntry@@','.?AVCTheaterGroupAlertEntry@@') and x.get('native_popup',{}).get('status')!='nested_panel']
   windows=[summarize_window(x) for x in roots
            if category!='world_tension' or x['name']=='world_tension_popup']
   if refs is not None:
